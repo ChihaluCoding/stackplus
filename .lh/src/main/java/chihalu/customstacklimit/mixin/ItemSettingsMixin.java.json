@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/java/chihalu/customstacklimit/mixin/ItemSettingsMixin.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1760777891636,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1760777891636,
+            "name": "Commit-0",
+            "content": "package chihalu.customstacklimit.mixin;\r\n\r\nimport net.minecraft.item.Item;\r\nimport org.spongepowered.asm.mixin.Mixin;\r\nimport org.spongepowered.asm.mixin.injection.Constant;\r\nimport org.spongepowered.asm.mixin.injection.ModifyConstant;\r\n\r\n/**\r\n * Item.SettingsのmaxCount定数(99)を変更\r\n */\r\n@Mixin(Item.Settings.class)\r\npublic class ItemSettingsMixin {\r\n\r\n    /**\r\n     * maxCount()メソッド内の定数99を32767に変更\r\n     * これにより99個の制限を解除\r\n     */\r\n    @ModifyConstant(method = \"maxCount\", constant = @Constant(intValue = 99))\r\n    private int modifyMaxCountLimit(int original) {\r\n        return 32767; // 最大値を32767に変更\r\n    }\r\n}\r\n"
+        }
+    ]
+}

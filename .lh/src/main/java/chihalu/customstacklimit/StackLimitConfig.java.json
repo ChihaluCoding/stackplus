@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/chihalu/customstacklimit/StackLimitConfig.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1760777884339,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1761040226244,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,60 +1,17 @@\n-package chihalu.customstacklimit;\r\n-\r\n-import java.util.HashMap;\r\n-import java.util.Map;\r\n-import java.util.UUID;\r\n-\r\n-/**\r\n- * プレイヤーごとのスタック数設定を管理するクラス\r\n- */\r\n-public class StackLimitConfig {\r\n-    private static final Map<UUID, Integer> playerStackLimits = new HashMap<>();\r\n-    private static int defaultStackLimit = 64; // デフォルトは通常の64個\r\n-\r\n-    /**\r\n-     * プレイヤーのスタック数を設定\r\n-     */\r\n-    public static void setPlayerStackLimit(UUID playerId, int stackLimit) {\r\n-        if (stackLimit > 0) {\r\n-            playerStackLimits.put(playerId, stackLimit);\r\n-        }\r\n-    }\r\n-\r\n-    /**\r\n-     * プレイヤーのスタック数を取得\r\n-     */\r\n-    public static int getPlayerStackLimit(UUID playerId) {\r\n-        return playerStackLimits.getOrDefault(playerId, defaultStackLimit);\r\n-    }\r\n-\r\n-    /**\r\n-     * プレイヤーのスタック数設定を削除（デフォルトに戻す）\r\n-     */\r\n-    public static void removePlayerStackLimit(UUID playerId) {\r\n-        playerStackLimits.remove(playerId);\r\n-    }\r\n-\r\n-    /**\r\n-     * デフォルトのスタック数を取得\r\n-     */\r\n-    public static int getDefaultStackLimit() {\r\n-        return defaultStackLimit;\r\n-    }\r\n-\r\n-    /**\r\n-     * 現在のスレッドローカルプレイヤーID（Mixinから使用）\r\n-     */\r\n-    private static final ThreadLocal<UUID> currentPlayer = new ThreadLocal<>();\r\n-\r\n-    public static void setCurrentPlayer(UUID playerId) {\r\n-        currentPlayer.set(playerId);\r\n-    }\r\n-\r\n-    public static UUID getCurrentPlayer() {\r\n-        return currentPlayer.get();\r\n-    }\r\n-\r\n-    public static void clearCurrentPlayer() {\r\n-        currentPlayer.remove();\r\n-    }\r\n-}\r\n+package chihalu.customstacklimit;\n+\n+/**\n+ * スタック数設定を管理するクラス\n+ * 常時99個のスタック制限を適用します\n+ */\n+public class StackLimitConfig {\n+    // 常時99個のスタック制限\n+    public static final int STACK_LIMIT = 99;\n+\n+    /**\n+     * スタック数を取得\n+     */\n+    public static int getStackLimit() {\n+        return STACK_LIMIT;\n+    }\n+}\n"
+                }
+            ],
+            "date": 1760777884339,
+            "name": "Commit-0",
+            "content": "package chihalu.customstacklimit;\r\n\r\nimport java.util.HashMap;\r\nimport java.util.Map;\r\nimport java.util.UUID;\r\n\r\n/**\r\n * プレイヤーごとのスタック数設定を管理するクラス\r\n */\r\npublic class StackLimitConfig {\r\n    private static final Map<UUID, Integer> playerStackLimits = new HashMap<>();\r\n    private static int defaultStackLimit = 64; // デフォルトは通常の64個\r\n\r\n    /**\r\n     * プレイヤーのスタック数を設定\r\n     */\r\n    public static void setPlayerStackLimit(UUID playerId, int stackLimit) {\r\n        if (stackLimit > 0) {\r\n            playerStackLimits.put(playerId, stackLimit);\r\n        }\r\n    }\r\n\r\n    /**\r\n     * プレイヤーのスタック数を取得\r\n     */\r\n    public static int getPlayerStackLimit(UUID playerId) {\r\n        return playerStackLimits.getOrDefault(playerId, defaultStackLimit);\r\n    }\r\n\r\n    /**\r\n     * プレイヤーのスタック数設定を削除（デフォルトに戻す）\r\n     */\r\n    public static void removePlayerStackLimit(UUID playerId) {\r\n        playerStackLimits.remove(playerId);\r\n    }\r\n\r\n    /**\r\n     * デフォルトのスタック数を取得\r\n     */\r\n    public static int getDefaultStackLimit() {\r\n        return defaultStackLimit;\r\n    }\r\n\r\n    /**\r\n     * 現在のスレッドローカルプレイヤーID（Mixinから使用）\r\n     */\r\n    private static final ThreadLocal<UUID> currentPlayer = new ThreadLocal<>();\r\n\r\n    public static void setCurrentPlayer(UUID playerId) {\r\n        currentPlayer.set(playerId);\r\n    }\r\n\r\n    public static UUID getCurrentPlayer() {\r\n        return currentPlayer.get();\r\n    }\r\n\r\n    public static void clearCurrentPlayer() {\r\n        currentPlayer.remove();\r\n    }\r\n}\r\n"
+        }
+    ]
+}

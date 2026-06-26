@@ -1,0 +1,22 @@
+{
+    "sourceFile": "src/main/java/chihalu/customstacklimit/command/StackCommand.java",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1760777884688,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1760783526630,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -38,8 +38,19 @@\n             () -> Text.literal(\"§aアイテムのスタック数を \" + stackLimit + \" 個に設定しました！\"),\r\n             false\r\n         );\r\n         \r\n+        if (stackLimit > 99) {\r\n+            context.getSource().sendFeedback(\r\n+                () -> Text.literal(\"§e注意: Minecraft 1.21+では99個を超えるスタックは制限があります\"),\r\n+                false\r\n+            );\r\n+            context.getSource().sendFeedback(\r\n+                () -> Text.literal(\"§e既存のスタックは99個までですが、新規取得時に適用されます\"),\r\n+                false\r\n+            );\r\n+        }\r\n+        \r\n         // インベントリを更新（既存のアイテムスタックを再計算）\r\n         player.getInventory().markDirty();\r\n         player.currentScreenHandler.syncState();\r\n         \r\n"
+                }
+            ],
+            "date": 1760777884688,
+            "name": "Commit-0",
+            "content": "package chihalu.customstacklimit.command;\r\n\r\nimport chihalu.customstacklimit.StackLimitConfig;\r\nimport com.mojang.brigadier.CommandDispatcher;\r\nimport com.mojang.brigadier.arguments.IntegerArgumentType;\r\nimport com.mojang.brigadier.context.CommandContext;\r\nimport com.mojang.brigadier.exceptions.CommandSyntaxException;\r\nimport net.minecraft.command.CommandRegistryAccess;\r\nimport net.minecraft.server.command.CommandManager;\r\nimport net.minecraft.server.command.ServerCommandSource;\r\nimport net.minecraft.server.network.ServerPlayerEntity;\r\nimport net.minecraft.text.Text;\r\n\r\n/**\r\n * /stack コマンドの実装\r\n */\r\npublic class StackCommand {\r\n    \r\n    public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess, CommandManager.RegistrationEnvironment environment) {\r\n        dispatcher.register(CommandManager.literal(\"stack\")\r\n            .then(CommandManager.argument(\"count\", IntegerArgumentType.integer(1, 32767))\r\n                .executes(StackCommand::setStackLimit))\r\n            .executes(StackCommand::showCurrentStackLimit));\r\n    }\r\n\r\n    /**\r\n     * スタック数を設定する\r\n     */\r\n    private static int setStackLimit(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {\r\n        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();\r\n        int stackLimit = IntegerArgumentType.getInteger(context, \"count\");\r\n        \r\n        // プレイヤーのスタック数を設定\r\n        StackLimitConfig.setPlayerStackLimit(player.getUuid(), stackLimit);\r\n        \r\n        // 成功メッセージを表示\r\n        context.getSource().sendFeedback(\r\n            () -> Text.literal(\"§aアイテムのスタック数を \" + stackLimit + \" 個に設定しました！\"),\r\n            false\r\n        );\r\n        \r\n        // インベントリを更新（既存のアイテムスタックを再計算）\r\n        player.getInventory().markDirty();\r\n        player.currentScreenHandler.syncState();\r\n        \r\n        return 1;\r\n    }\r\n\r\n    /**\r\n     * 現在のスタック数設定を表示する\r\n     */\r\n    private static int showCurrentStackLimit(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {\r\n        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();\r\n        int currentLimit = StackLimitConfig.getPlayerStackLimit(player.getUuid());\r\n        \r\n        context.getSource().sendFeedback(\r\n            () -> Text.literal(\"§e現在のスタック数: \" + currentLimit + \" 個\"),\r\n            false\r\n        );\r\n        \r\n        return 1;\r\n    }\r\n}\r\n"
+        }
+    ]
+}

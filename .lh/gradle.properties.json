@@ -1,0 +1,42 @@
+{
+    "sourceFile": "gradle.properties",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 6,
+            "patches": [
+                {
+                    "date": 1760785327799,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1760785334212,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,10 +12,10 @@\n loader_version=0.17.3\n loom_version=1.11-SNAPSHOT\n \n # Mod Properties\n-mod_version=1.0.0\n+mod_version=1.0.1\n maven_group=chihalu.customstacklimit\n-archives_base_name=customstacklimit-1\n+archives_base_name=customstacklimit-1.21.9\n \n # Dependencies\n fabric_version=0.134.0+1.21.9\n\\ No newline at end of file\n"
+                },
+                {
+                    "date": 1760785350019,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,9 +12,9 @@\n loader_version=0.17.3\n loom_version=1.11-SNAPSHOT\n \n # Mod Properties\n-mod_version=1.0.1\n+mod_version=1.0.1_\n maven_group=chihalu.customstacklimit\n archives_base_name=customstacklimit-1.21.9\n \n # Dependencies\n"
+                },
+                {
+                    "date": 1760785369859,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,9 +12,9 @@\n loader_version=0.17.3\n loom_version=1.11-SNAPSHOT\n \n # Mod Properties\n-mod_version=1.0.1_\n+mod_version=1.0.1_β\n maven_group=chihalu.customstacklimit\n archives_base_name=customstacklimit-1.21.9\n \n # Dependencies\n"
+                },
+                {
+                    "date": 1760785602518,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,9 +12,9 @@\n loader_version=0.17.3\n loom_version=1.11-SNAPSHOT\n \n # Mod Properties\n-mod_version=1.0.1_β\n+mod_version=1.0.1\n maven_group=chihalu.customstacklimit\n archives_base_name=customstacklimit-1.21.9\n \n # Dependencies\n"
+                },
+                {
+                    "date": 1761040530653,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,9 +12,9 @@\n loader_version=0.17.3\n loom_version=1.11-SNAPSHOT\n \n # Mod Properties\n-mod_version=1.0.1\n+mod_version=1.0.3\n maven_group=chihalu.customstacklimit\n archives_base_name=customstacklimit-1.21.9\n \n # Dependencies\n"
+                },
+                {
+                    "date": 1761040983396,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -14,8 +14,8 @@\n \n # Mod Properties\n mod_version=1.0.3\n maven_group=chihalu.customstacklimit\n-archives_base_name=customstacklimit-1.21.9\n+archives_base_name=-1.21.9\n \n # Dependencies\n fabric_version=0.134.0+1.21.9\n\\ No newline at end of file\n"
+                }
+            ],
+            "date": 1760785327799,
+            "name": "Commit-0",
+            "content": "# Done to increase the memory available to gradle.\norg.gradle.jvmargs=-Xmx1G\norg.gradle.parallel=true\n\n# IntelliJ IDEA is not yet fully compatible with configuration cache, see: https://github.com/FabricMC/fabric-loom/issues/1349\norg.gradle.configuration-cache=false\n\n# Fabric Properties\n# check these on https://fabricmc.net/develop\nminecraft_version=1.21.9\nyarn_mappings=1.21.9+build.1\nloader_version=0.17.3\nloom_version=1.11-SNAPSHOT\n\n# Mod Properties\nmod_version=1.0.0\nmaven_group=chihalu.customstacklimit\narchives_base_name=customstacklimit-1\n\n# Dependencies\nfabric_version=0.134.0+1.21.9"
+        }
+    ]
+}

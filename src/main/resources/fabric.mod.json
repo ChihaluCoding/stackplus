@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "stackplus",
+	"version": "${version}",
+	"name": "StackPlus",
+	"description": "Increases stack sizes to 1000 while keeping bundles and equipment unstackable.",
+	"authors": [
+		"chihalu"
+	],
+	"contact": {
+		"sources": "https://github.com/ChihaluCoding/CustomStackLimit?tab=readme-ov-file"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/stackplus/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"chihalu.customstacklimit.CustomStackLimitClient"
+		],
+		"fabric-datagen": [
+			"chihalu.customstacklimit.CustomStackLimitDataGenerator"
+		]
+	},
+	"mixins": [
+		"customstacklimit.mixins.json",
+		{
+			"config": "customstacklimit.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}

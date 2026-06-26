@@ -1,0 +1,18 @@
+{
+    "sourceFile": "src/main/resources/assets/customstacklimit/lang/ja_jp.json",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1760777889055,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1760777889055,
+            "name": "Commit-0",
+            "content": "{\r\n  \"command.customstacklimit.stack.set\": \"アイテムのスタック数を %s 個に設定しました！\",\r\n  \"command.customstacklimit.stack.current\": \"現在のスタック数: %s 個\",\r\n  \"command.customstacklimit.stack.description\": \"アイテムのスタック数を変更します\"\r\n}\r\n"
+        }
+    ]
+}

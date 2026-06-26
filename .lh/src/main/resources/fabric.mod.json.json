@@ -1,0 +1,70 @@
+{
+    "sourceFile": "src/main/resources/fabric.mod.json",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 13,
+            "patches": [
+                {
+                    "date": 1760777888380,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1760783528330,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -12,13 +12,10 @@\n \t\t\"sources\": \"https://github.com/FabricMC/fabric-example-mod\"\n \t},\n \t\"license\": \"CC0-1.0\",\n \t\"icon\": \"assets/customstacklimit/icon.png\",\n-\t\"environment\": \"*\",\n+\t\"environment\": \"client\",\n \t\"entrypoints\": {\n-\t\t\"main\": [\n-\t\t\t\"chihalu.customstacklimit.CustomStackLimit\"\n-\t\t],\n \t\t\"client\": [\n \t\t\t\"chihalu.customstacklimit.CustomStackLimitClient\"\n \t\t],\n \t\t\"fabric-datagen\": [\n"
+                },
+                {
+                    "date": 1760784575557,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n \t\"schemaVersion\": 1,\n \t\"id\": \"customstacklimit\",\n \t\"version\": \"${version}\",\n \t\"name\": \"CustomStackLimit\",\n-\t\"description\": \"アイテムのスタック数を64個以上にカスタマイズできるMod。/stack コマンドで設定可能。\",\n+\t\"description\": \"アイテムのスタック数最大にカスタマイズできるMod。/stack コマンドで設定可能。\",\n \t\"authors\": [\n \t\t\"chihalu\"\n \t],\n \t\"contact\": {\n"
+                },
+                {
+                    "date": 1760784864512,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,15 +2,15 @@\n \t\"schemaVersion\": 1,\n \t\"id\": \"customstacklimit\",\n \t\"version\": \"${version}\",\n \t\"name\": \"CustomStackLimit\",\n-\t\"description\": \"アイテムのスタック数最大にカスタマイズできるMod。/stack コマンドで設定可能。\",\n+\t\"description\": \"アイテムのスタック数を最大99にカスタマイズできるMod。/stack コマンドで設定可能。\",\n \t\"authors\": [\n \t\t\"chihalu\"\n \t],\n \t\"contact\": {\n \t\t\"homepage\": \"https://fabricmc.net/\",\n-\t\t\"sources\": \"https://github.com/FabricMC/fabric-example-mod\"\n+\t\t\"sources\": \"https://github.com/ChihaluCoding/CustomStackLimit?tab=readme-ov-file\"\n \t},\n \t\"license\": \"CC0-1.0\",\n \t\"icon\": \"assets/customstacklimit/icon.png\",\n \t\"environment\": \"client\",\n"
+                },
+                {
+                    "date": 1760784869745,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -7,9 +7,8 @@\n \t\"authors\": [\n \t\t\"chihalu\"\n \t],\n \t\"contact\": {\n-\t\t\"homepage\": \"https://fabricmc.net/\",\n \t\t\"sources\": \"https://github.com/ChihaluCoding/CustomStackLimit?tab=readme-ov-file\"\n \t},\n \t\"license\": \"CC0-1.0\",\n \t\"icon\": \"assets/customstacklimit/icon.png\",\n"
+                },
+                {
+                    "date": 1760784913085,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -2,9 +2,9 @@\n \t\"schemaVersion\": 1,\n \t\"id\": \"customstacklimit\",\n \t\"version\": \"${version}\",\n \t\"name\": \"CustomStackLimit\",\n-\t\"description\": \"アイテムのスタック数を最大99にカスタマイズできるMod。/stack コマンドで設定可能。\",\n+\t\"description\": \"A mod that allows customizing the stack size of items up to 99. Configurable via the /stack command.\",\n \t\"authors\": [\n \t\t\"chihalu\"\n \t],\n \t\"contact\": {\n"
+                },
+                {
+                    "date": 1761040430747,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -21,13 +21,9 @@\n \t\t\t\"chihalu.customstacklimit.CustomStackLimitDataGenerator\"\n \t\t]\n \t},\n \t\"mixins\": [\n-\t\t\"customstacklimit.mixins.json\",\n-\t\t{\n-\t\t\t\"config\": \"customstacklimit.client.mixins.json\",\n-\t\t\t\"environment\": \"client\"\n-\t\t}\n+\t\t\"customstacklimit.mixins.json\"\n \t],\n \t\"depends\": {\n \t\t\"fabricloader\": \">=0.17.3\",\n \t\t\"minecraft\": \"~1.21.9\",\n"
+                },
+                {
+                    "date": 1761040436039,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -21,9 +21,13 @@\n \t\t\t\"chihalu.customstacklimit.CustomStackLimitDataGenerator\"\n \t\t]\n \t},\n \t\"mixins\": [\n-\t\t\"customstacklimit.mixins.json\"\n+\t\t\"customstacklimit.mixins.json\",\n+\t\t{\n+\t\t\t\"config\": \"customstacklimit.client.mixins.json\",\n+\t\t\t\"environment\": \"client\"\n+\t\t}\n \t],\n \t\"depends\": {\n \t\t\"fabricloader\": \">=0.17.3\",\n \t\t\"minecraft\": \"~1.21.9\",\n"
+                },
+                {
+                    "date": 1761040761665,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,10 +1,10 @@\n {\n \t\"schemaVersion\": 1,\n \t\"id\": \"customstacklimit\",\n \t\"version\": \"${version}\",\n-\t\"name\": \"CustomStackLimit\",\n-\t\"description\": \"A mod that allows customizing the stack size of items up to 99. Configurable via the /stack command.\",\n+\t\"name\": \"Stack\",\n+\t\"description\": \"A mod that increases the stack size of all items to 99.\",\n \t\"authors\": [\n \t\t\"chihalu\"\n \t],\n \t\"contact\": {\n"
+                },
+                {
+                    "date": 1761040767996,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,9 +1,9 @@\n {\n \t\"schemaVersion\": 1,\n-\t\"id\": \"customstacklimit\",\n+\t\"id\": \"stackplus\",\n \t\"version\": \"${version}\",\n-\t\"name\": \"Stack\",\n+\t\"name\": \"StackPlus\",\n \t\"description\": \"A mod that increases the stack size of all items to 99.\",\n \t\"authors\": [\n \t\t\"chihalu\"\n \t],\n"
+                },
+                {
+                    "date": 1761040777448,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -21,11 +21,11 @@\n \t\t\t\"chihalu.customstacklimit.CustomStackLimitDataGenerator\"\n \t\t]\n \t},\n \t\"mixins\": [\n-\t\t\"customstacklimit.mixins.json\",\n+\t\t\"stackplus.mixins.json\",\n \t\t{\n-\t\t\t\"config\": \"customstacklimit.client.mixins.json\",\n+\t\t\t\"config\": \"stackplus.client.mixins.json\",\n \t\t\t\"environment\": \"client\"\n \t\t}\n \t],\n \t\"depends\": {\n"
+                },
+                {
+                    "date": 1761040783784,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -14,12 +14,12 @@\n \t\"icon\": \"assets/customstacklimit/icon.png\",\n \t\"environment\": \"client\",\n \t\"entrypoints\": {\n \t\t\"client\": [\n-\t\t\t\"chihalu.customstacklimit.CustomStackLimitClient\"\n+\t\t\t\"chihalu.stackplus.StackPlusClient\"\n \t\t],\n \t\t\"fabric-datagen\": [\n-\t\t\t\"chihalu.customstacklimit.CustomStackLimitDataGenerator\"\n+\t\t\t\"chihalu.stackplus.StackPlusDataGenerator\"\n \t\t]\n \t},\n \t\"mixins\": [\n \t\t\"stackplus.mixins.json\",\n"
+                },
+                {
+                    "date": 1761040823376,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -14,18 +14,18 @@\n \t\"icon\": \"assets/customstacklimit/icon.png\",\n \t\"environment\": \"client\",\n \t\"entrypoints\": {\n \t\t\"client\": [\n-\t\t\t\"chihalu.stackplus.StackPlusClient\"\n+\t\t\t\"chihalu.customstacklimit.CustomStackLimitClient\"\n \t\t],\n \t\t\"fabric-datagen\": [\n-\t\t\t\"chihalu.stackplus.StackPlusDataGenerator\"\n+\t\t\t\"chihalu.customstacklimit.CustomStackLimitDataGenerator\"\n \t\t]\n \t},\n \t\"mixins\": [\n \t\t\"stackplus.mixins.json\",\n \t\t{\n-\t\t\t\"config\": \"stackplus.client.mixins.json\",\n+\t\t\t\"config\": \"customstacklimit.client.mixins.json\",\n \t\t\t\"environment\": \"client\"\n \t\t}\n \t],\n \t\"depends\": {\n"
+                },
+                {
+                    "date": 1761040833489,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -10,9 +10,9 @@\n \t\"contact\": {\n \t\t\"sources\": \"https://github.com/ChihaluCoding/CustomStackLimit?tab=readme-ov-file\"\n \t},\n \t\"license\": \"CC0-1.0\",\n-\t\"icon\": \"assets/customstacklimit/icon.png\",\n+\t\"icon\": \"assets/stackplus/icon.png\",\n \t\"environment\": \"client\",\n \t\"entrypoints\": {\n \t\t\"client\": [\n \t\t\t\"chihalu.customstacklimit.CustomStackLimitClient\"\n@@ -21,9 +21,9 @@\n \t\t\t\"chihalu.customstacklimit.CustomStackLimitDataGenerator\"\n \t\t]\n \t},\n \t\"mixins\": [\n-\t\t\"stackplus.mixins.json\",\n+\t\t\"customstacklimit.mixins.json\",\n \t\t{\n \t\t\t\"config\": \"customstacklimit.client.mixins.json\",\n \t\t\t\"environment\": \"client\"\n \t\t}\n"
+                }
+            ],
+            "date": 1760777888380,
+            "name": "Commit-0",
+            "content": "{\n\t\"schemaVersion\": 1,\n\t\"id\": \"customstacklimit\",\n\t\"version\": \"${version}\",\n\t\"name\": \"CustomStackLimit\",\n\t\"description\": \"アイテムのスタック数を64個以上にカスタマイズできるMod。/stack コマンドで設定可能。\",\n\t\"authors\": [\n\t\t\"chihalu\"\n\t],\n\t\"contact\": {\n\t\t\"homepage\": \"https://fabricmc.net/\",\n\t\t\"sources\": \"https://github.com/FabricMC/fabric-example-mod\"\n\t},\n\t\"license\": \"CC0-1.0\",\n\t\"icon\": \"assets/customstacklimit/icon.png\",\n\t\"environment\": \"*\",\n\t\"entrypoints\": {\n\t\t\"main\": [\n\t\t\t\"chihalu.customstacklimit.CustomStackLimit\"\n\t\t],\n\t\t\"client\": [\n\t\t\t\"chihalu.customstacklimit.CustomStackLimitClient\"\n\t\t],\n\t\t\"fabric-datagen\": [\n\t\t\t\"chihalu.customstacklimit.CustomStackLimitDataGenerator\"\n\t\t]\n\t},\n\t\"mixins\": [\n\t\t\"customstacklimit.mixins.json\",\n\t\t{\n\t\t\t\"config\": \"customstacklimit.client.mixins.json\",\n\t\t\t\"environment\": \"client\"\n\t\t}\n\t],\n\t\"depends\": {\n\t\t\"fabricloader\": \">=0.17.3\",\n\t\t\"minecraft\": \"~1.21.9\",\n\t\t\"java\": \">=21\",\n\t\t\"fabric-api\": \"*\"\n\t},\n\t\"suggests\": {\n\t\t\"another-mod\": \"*\"\n\t}\n}"
+        }
+    ]
+}
