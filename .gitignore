@@ -38,3 +38,9 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+tools/
+tools/mod_branch_manager.py
+mod-branch-manager.bat
+docs/
+.codex-backups/
+.lh/
