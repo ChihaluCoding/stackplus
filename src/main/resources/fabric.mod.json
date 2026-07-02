@@ -3,19 +3,22 @@
 	"id": "stackplus",
 	"version": "${version}",
 	"name": "StackPlus",
-	"description": "Increases stack sizes to 1000 while keeping bundles and equipment unstackable.",
+	"description": "You can set the stack size to a maximum of 1,000,000,000, but items with durability cannot be stacked.",
 	"authors": [
 		"chihalu"
 	],
 	"contact": {
 		"sources": "https://github.com/ChihaluCoding/CustomStackLimit?tab=readme-ov-file"
 	},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/stackplus/icon.png",
 	"environment": "client",
 	"entrypoints": {
 		"client": [
 			"chihalu.customstacklimit.CustomStackLimitClient"
+		],
+		"modmenu": [
+			"chihalu.customstacklimit.modmenu.StackPlusModMenuIntegration"
 		],
 		"fabric-datagen": [
 			"chihalu.customstacklimit.CustomStackLimitDataGenerator"
@@ -35,6 +38,6 @@
 		"fabric-api": "*"
 	},
 	"suggests": {
-		"another-mod": "*"
+		"modmenu": "*"
 	}
 }
