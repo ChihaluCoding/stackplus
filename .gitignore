@@ -44,3 +44,4 @@ mod-branch-manager.bat
 docs/
 .codex-backups/
 .lh/
+jar/
