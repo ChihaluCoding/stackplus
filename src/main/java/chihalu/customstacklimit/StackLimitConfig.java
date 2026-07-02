@@ -2,7 +2,6 @@ package chihalu.customstacklimit;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.BedItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
@@ -132,13 +131,14 @@ public class StackLimitConfig {
     }
 
     private static boolean isForcedStackableItem(Item item) {
-        return item instanceof BedItem || isRequestedSingleStackItem(item);
+        return isRequestedSingleStackItem(item);
     }
 
     private static boolean isRequestedSingleStackItem(Item item) {
         String path = getItemPath(item);
 
         return path.endsWith("_banner_pattern")
+                || path.endsWith("_bed")
                 || path.equals("enchanted_book")
                 || path.equals("mushroom_stew")
                 || path.equals("rabbit_stew")
