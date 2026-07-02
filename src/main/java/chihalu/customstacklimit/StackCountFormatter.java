@@ -37,4 +37,5 @@ public final class StackCountFormatter {
     private static String formatUnit(int count, int unitValue, String suffix) {
         return String.format(Locale.ROOT, "%d%s", count / unitValue, suffix);
     }
+
 }

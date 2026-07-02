@@ -1,14 +1,11 @@
 {
 	"required": true,
 	"package": "chihalu.customstacklimit.mixin",
-	"compatibilityLevel": "JAVA_25",
+	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"ContainerMixin",
 		"ItemMixin",
 		"ItemStackMixin",
-		"ItemStackValidatedStreamCodecMixin",
-		"ItemStackWithSlotMixin",
-		"PlayerInventoryMixin",
 		"SlotMixin"
 	],
 	"injectors": {

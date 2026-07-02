@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CustomStackLimit implements ModInitializer {
-	public static final String MOD_ID = "customstacklimit";
+	public static final String MOD_ID = "stackplus";
 
 	// このロガーはコンソールとログファイルにテキストを書き込むために使用されます。
 	// ロガーの名前にMod IDを使用することがベストプラクティスとされています。
@@ -19,6 +19,6 @@ public class CustomStackLimit implements ModInitializer {
 		// 注意深く進めてください。
 
 		LOGGER.info("CustomStackLimit Mod が初期化されました！");
-		LOGGER.info("CustomStackLimit: 通常アイテムのスタック数が1000個に設定されました");
+		LOGGER.info("CustomStackLimit: 通常アイテムのスタック数が{}個に設定されました", StackLimitConfig.getStackLimit());
 	}
 }

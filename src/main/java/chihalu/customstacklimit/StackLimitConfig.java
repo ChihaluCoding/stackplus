@@ -1,10 +1,10 @@
 package chihalu.customstacklimit;
 
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.BedItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.item.BedItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.registry.Registries;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,7 +16,8 @@ import java.util.Locale;
 import java.util.Properties;
 
 /**
- * スタック数設定を管理し、通常アイテムへ設定されたスタック制限を適用します。
+ * スタック数設定を管理するクラス
+ * 通常アイテムへ設定されたスタック制限を適用します。
  */
 public class StackLimitConfig {
     public static final int DEFAULT_STACK_LIMIT = 1000;
@@ -60,12 +61,20 @@ public class StackLimitConfig {
         }
     }
 
+    /**
+     * スタック数を取得
+     */
     public static int getStackLimit() {
         return stackLimit;
     }
 
     public static void setStackLimit(int value) {
         stackLimit = clampStackLimit(value);
+    }
+
+    public static void saveStackLimit(int value) {
+        setStackLimit(value);
+        saveConfig();
     }
 
     public static DisplayMode getDisplayMode() {
@@ -76,43 +85,15 @@ public class StackLimitConfig {
         displayMode = mode;
     }
 
+    public static void saveDisplayMode(DisplayMode mode) {
+        setDisplayMode(mode);
+        saveConfig();
+    }
+
     public static void saveSettings(int stackLimitValue, DisplayMode displayModeValue) {
         setStackLimit(stackLimitValue);
         setDisplayMode(displayModeValue);
         saveConfig();
-    }
-
-    public static int clampStackLimit(int value) {
-        return Math.max(MIN_STACK_LIMIT, Math.min(MAX_STACK_LIMIT, value));
-    }
-
-    public static String formatStackLimit(int value) {
-        return NUMBER_FORMAT.format(value);
-    }
-
-    public static int getAdjustedStackLimit(int originalLimit) {
-        if (originalLimit <= 1) {
-            return originalLimit;
-        }
-
-        return stackLimit;
-    }
-
-    public static int getAdjustedStackLimit(Item item, int originalLimit) {
-        if (isForcedStackableItem(item)) {
-            return stackLimit;
-        }
-
-        return getAdjustedStackLimit(originalLimit);
-    }
-
-    public static int getAdjustedStackLimit(ItemStack stack, int originalLimit) {
-        if (stack.isDamageableItem()) {
-            return originalLimit;
-        }
-
-        int adjustedLimit = getAdjustedStackLimit(stack.getItem(), originalLimit);
-        return Math.max(adjustedLimit, stack.getCount());
     }
 
     private static void saveConfig() {
@@ -129,6 +110,45 @@ public class StackLimitConfig {
         } catch (IOException exception) {
             CustomStackLimit.LOGGER.warn("StackPlus 設定ファイルの保存に失敗しました: {}", configPath, exception);
         }
+    }
+
+    public static int clampStackLimit(int value) {
+        return Math.max(MIN_STACK_LIMIT, Math.min(MAX_STACK_LIMIT, value));
+    }
+
+    public static String formatStackLimit(int value) {
+        return NUMBER_FORMAT.format(value);
+    }
+
+    /**
+     * 対象外の非スタックアイテムは元の上限を維持します。
+     */
+    public static int getAdjustedStackLimit(int originalLimit) {
+        if (originalLimit <= 1) {
+            return originalLimit;
+        }
+
+        return stackLimit;
+    }
+
+    /**
+     * ベッドと指定対象の非スタックアイテムは、このModでは通常アイテムと同じ上限にします。
+     */
+    public static int getAdjustedStackLimit(Item item, int originalLimit) {
+        if (isForcedStackableItem(item)) {
+            return stackLimit;
+        }
+
+        return getAdjustedStackLimit(originalLimit);
+    }
+
+    public static int getAdjustedStackLimit(ItemStack stack, int originalLimit) {
+        if (stack.isDamageable()) {
+            return originalLimit;
+        }
+
+        int adjustedLimit = getAdjustedStackLimit(stack.getItem(), originalLimit);
+        return Math.max(adjustedLimit, stack.getCount());
     }
 
     private static boolean isForcedStackableItem(Item item) {
@@ -162,7 +182,7 @@ public class StackLimitConfig {
     }
 
     private static String getItemPath(Item item) {
-        return BuiltInRegistries.ITEM.getKey(item).getPath();
+        return Registries.ITEM.getId(item).getPath();
     }
 
     private static ConfigValues loadConfig() {

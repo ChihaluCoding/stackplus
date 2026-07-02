@@ -1,7 +1,7 @@
 package chihalu.customstacklimit.mixin;
 
 import chihalu.customstacklimit.StackLimitConfig;
-import net.minecraft.world.item.Item;
+import net.minecraft.item.Item;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -16,7 +16,7 @@ public class ItemMixin {
     /**
      * 元の上限が1個のアイテムは、バンドルや装備系を含めてスタック不可のまま維持します。
      */
-    @Inject(method = "getDefaultMaxStackSize", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "getMaxCount", at = @At("RETURN"), cancellable = true)
     private void customMaxCount(CallbackInfoReturnable<Integer> cir) {
         cir.setReturnValue(StackLimitConfig.getAdjustedStackLimit((Item) (Object) this, cir.getReturnValue()));
     }

@@ -1,13 +1,13 @@
 package chihalu.customstacklimit.modmenu;
 
 import chihalu.customstacklimit.StackLimitConfig;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.AbstractSliderButton;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.SliderWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.text.Text;
 
 import java.util.List;
 
@@ -28,12 +28,12 @@ public class StackPlusConfigScreen extends Screen {
     private int pendingStackLimit;
     private StackLimitConfig.DisplayMode pendingDisplayMode;
     private StackLimitSlider stackLimitSlider;
-    private EditBox stackLimitInput;
-    private Button displayModeButton;
+    private TextFieldWidget stackLimitInput;
+    private ButtonWidget displayModeButton;
     private boolean updatingStackLimitInput;
 
     public StackPlusConfigScreen(Screen parent) {
-        super(Component.translatable("screen.stackplus.config.title"));
+        super(Text.translatable("screen.stackplus.config.title"));
         this.parent = parent;
         this.pendingStackLimit = StackLimitConfig.getStackLimit();
         this.pendingDisplayMode = StackLimitConfig.getDisplayMode();
@@ -54,62 +54,63 @@ public class StackPlusConfigScreen extends Screen {
 
         this.stackLimitSlider = new StackLimitSlider(left, sliderY, sliderWidth, 20, pendingStackLimit,
                 value -> setPendingStackLimit(value, false, true));
-        addRenderableWidget(this.stackLimitSlider);
+        addDrawableChild(this.stackLimitSlider);
 
-        this.stackLimitInput = new EditBox(this.font, left + sliderWidth + gap, sliderY, inputWidth, 20, stackLimitText(pendingStackLimit));
+        this.stackLimitInput = new TextFieldWidget(this.textRenderer, left + sliderWidth + gap, sliderY, inputWidth, 20, stackLimitText(pendingStackLimit));
         this.stackLimitInput.setMaxLength(13);
-        this.stackLimitInput.setResponder(this::onStackLimitInputChanged);
+        this.stackLimitInput.setTextPredicate(StackPlusConfigScreen::isValidStackLimitInput);
+        this.stackLimitInput.setChangedListener(this::onStackLimitInputChanged);
         setStackLimitInputText(pendingStackLimit);
-        addRenderableWidget(this.stackLimitInput);
+        addDrawableChild(this.stackLimitInput);
 
         addPresetButtons(left, presetY, controlWidth);
 
-        this.displayModeButton = Button.builder(displayModeText(pendingDisplayMode), button -> {
+        this.displayModeButton = ButtonWidget.builder(displayModeText(pendingDisplayMode), button -> {
                     pendingDisplayMode = pendingDisplayMode.next();
                     button.setMessage(displayModeText(pendingDisplayMode));
                 })
-                .bounds(left, displayModeY, controlWidth, 20)
+                .dimensions(left, displayModeY, controlWidth, 20)
                 .build();
-        addRenderableWidget(this.displayModeButton);
+        addDrawableChild(this.displayModeButton);
 
-        addRenderableWidget(Button.builder(Component.translatable("button.stackplus.save"), button -> save())
-                .bounds(centerX - 154, buttonY, 96, 20)
+        addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.save"), button -> save())
+                .dimensions(centerX - 154, buttonY, 96, 20)
                 .build());
-        addRenderableWidget(Button.builder(Component.translatable("button.stackplus.reset"), button -> {
+        addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.reset"), button -> {
                     setPendingStackLimit(StackLimitConfig.DEFAULT_STACK_LIMIT, true, true);
                     pendingDisplayMode = StackLimitConfig.DisplayMode.COMPACT;
                     displayModeButton.setMessage(displayModeText(pendingDisplayMode));
                 })
-                .bounds(centerX - 48, buttonY, 96, 20)
+                .dimensions(centerX - 48, buttonY, 96, 20)
                 .build());
-        addRenderableWidget(Button.builder(Component.translatable("button.stackplus.cancel"), button -> onClose())
-                .bounds(centerX + 58, buttonY, 96, 20)
+        addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.cancel"), button -> close())
+                .dimensions(centerX + 58, buttonY, 96, 20)
                 .build());
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        super.render(context, mouseX, mouseY, delta);
         int sliderY = Math.max(50, this.height / 2 - 112);
         int displayModeY = sliderY + 108;
-        graphics.centeredText(this.font, this.title, this.width / 2, 20, 0xFFFFFFFF);
-        graphics.centeredText(this.font, stackLimitText(pendingStackLimit), this.width / 2, sliderY - 18, 0xFFE0E0E0);
+        context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 20, 0xFFFFFFFF);
+        context.drawCenteredTextWithShadow(this.textRenderer, stackLimitText(pendingStackLimit), this.width / 2, sliderY - 18, 0xFFE0E0E0);
         if (pendingStackLimit > StackLimitConfig.WARNING_STACK_LIMIT) {
-            graphics.centeredText(this.font, Component.translatable(getWarningHintKey(pendingStackLimit)), this.width / 2, sliderY + 76, 0xFFFFD966);
+            context.drawCenteredTextWithShadow(this.textRenderer, Text.translatable(getWarningHintKey(pendingStackLimit)), this.width / 2, sliderY + 76, 0xFFFFD966);
         }
-        graphics.centeredText(this.font, Component.translatable("screen.stackplus.config.existing_stack_hint"), this.width / 2, sliderY + 90, 0xFFB8B8B8);
-        graphics.centeredText(this.font, displayModeDescriptionText(pendingDisplayMode), this.width / 2, displayModeY + 24, 0xFFE0E0E0);
+        context.drawCenteredTextWithShadow(this.textRenderer, Text.translatable("screen.stackplus.config.existing_stack_hint"), this.width / 2, sliderY + 90, 0xFFB8B8B8);
+        context.drawCenteredTextWithShadow(this.textRenderer, displayModeDescriptionText(pendingDisplayMode), this.width / 2, displayModeY + 24, 0xFFE0E0E0);
     }
 
     @Override
-    public void onClose() {
-        Minecraft.getInstance().setScreenAndShow(parent);
+    public void close() {
+        MinecraftClient.getInstance().setScreen(parent);
     }
 
     private void save() {
         syncPendingStackLimitFromInput();
         if (pendingStackLimit > StackLimitConfig.WARNING_STACK_LIMIT) {
-            Minecraft.getInstance().setScreenAndShow(new StackPlusWarningScreen(this, pendingStackLimit));
+            MinecraftClient.getInstance().setScreen(new StackPlusWarningScreen(this, pendingStackLimit));
             return;
         }
 
@@ -118,22 +119,22 @@ public class StackPlusConfigScreen extends Screen {
 
     void saveUnchecked() {
         StackLimitConfig.saveSettings(pendingStackLimit, pendingDisplayMode);
-        onClose();
+        close();
     }
 
-    private static Component stackLimitText(int stackLimit) {
-        return Component.translatable("screen.stackplus.config.stack_limit", StackLimitConfig.formatStackLimit(stackLimit));
+    private static Text stackLimitText(int stackLimit) {
+        return Text.translatable("screen.stackplus.config.stack_limit", StackLimitConfig.formatStackLimit(stackLimit));
     }
 
-    private static Component displayModeText(StackLimitConfig.DisplayMode displayMode) {
+    private static Text displayModeText(StackLimitConfig.DisplayMode displayMode) {
         String modeKey = displayMode == StackLimitConfig.DisplayMode.PLUS_99
                 ? "screen.stackplus.config.display_mode.99_plus"
                 : "screen.stackplus.config.display_mode.compact";
-        return Component.translatable("screen.stackplus.config.display_mode", Component.translatable(modeKey));
+        return Text.translatable("screen.stackplus.config.display_mode", Text.translatable(modeKey));
     }
 
-    private static Component displayModeDescriptionText(StackLimitConfig.DisplayMode displayMode) {
-        return Component.translatable(displayMode == StackLimitConfig.DisplayMode.PLUS_99
+    private static Text displayModeDescriptionText(StackLimitConfig.DisplayMode displayMode) {
+        return Text.translatable(displayMode == StackLimitConfig.DisplayMode.PLUS_99
                 ? "screen.stackplus.config.display_mode.description.99_plus"
                 : "screen.stackplus.config.display_mode.description.compact");
     }
@@ -160,8 +161,8 @@ public class StackPlusConfigScreen extends Screen {
             int x = left + column * (buttonWidth + gap);
             int y = presetY + row * 22;
             int presetValue = STACK_LIMIT_PRESETS[index];
-            addRenderableWidget(Button.builder(Component.translatable(STACK_LIMIT_PRESET_KEYS[index]), button -> setPendingStackLimit(presetValue, true, true))
-                    .bounds(x, y, buttonWidth, 20)
+            addDrawableChild(ButtonWidget.builder(Text.translatable(STACK_LIMIT_PRESET_KEYS[index]), button -> setPendingStackLimit(presetValue, true, true))
+                    .dimensions(x, y, buttonWidth, 20)
                     .build());
         }
     }
@@ -178,12 +179,12 @@ public class StackPlusConfigScreen extends Screen {
 
     private void setStackLimitInputText(int stackLimit) {
         updatingStackLimitInput = true;
-        stackLimitInput.setValue(StackLimitConfig.formatStackLimit(stackLimit));
+        stackLimitInput.setText(StackLimitConfig.formatStackLimit(stackLimit));
         updatingStackLimitInput = false;
     }
 
     private void onStackLimitInputChanged(String input) {
-        if (updatingStackLimitInput || !isValidStackLimitInput(input)) {
+        if (updatingStackLimitInput) {
             return;
         }
 
@@ -194,7 +195,7 @@ public class StackPlusConfigScreen extends Screen {
     }
 
     private void syncPendingStackLimitFromInput() {
-        Integer parsedValue = parseStackLimitInput(stackLimitInput.getValue());
+        Integer parsedValue = parseStackLimitInput(stackLimitInput.getText());
         if (parsedValue == null) {
             setStackLimitInputText(pendingStackLimit);
             return;
@@ -241,11 +242,11 @@ public class StackPlusConfigScreen extends Screen {
         void onChange(int value);
     }
 
-    private static class StackLimitSlider extends AbstractSliderButton {
+    private static class StackLimitSlider extends SliderWidget {
         private final StackLimitChangeListener listener;
 
         StackLimitSlider(int x, int y, int width, int height, int stackLimit, StackLimitChangeListener listener) {
-            super(x, y, width, height, Component.empty(), toSliderValue(stackLimit));
+            super(x, y, width, height, Text.empty(), toSliderValue(stackLimit));
             this.listener = listener;
             updateMessage();
         }
@@ -279,53 +280,57 @@ public class StackPlusConfigScreen extends Screen {
     }
 
     private static class StackPlusWarningScreen extends Screen {
-        private static final List<Component> WARNING_LINES = List.of(
-                Component.translatable("screen.stackplus.warning.line_1"),
-                Component.translatable("screen.stackplus.warning.line_2"),
-                Component.empty(),
-                Component.translatable("screen.stackplus.warning.line_3"),
-                Component.empty(),
-                Component.translatable("screen.stackplus.warning.line_4"),
-                Component.translatable("screen.stackplus.warning.line_5"),
-                Component.translatable("screen.stackplus.warning.line_6"),
-                Component.empty(),
-                Component.translatable("screen.stackplus.warning.line_7"),
-                Component.translatable("screen.stackplus.warning.line_8")
+        private static final List<Text> WARNING_LINES = List.of(
+                Text.translatable("screen.stackplus.warning.line_1"),
+                Text.translatable("screen.stackplus.warning.line_2"),
+                Text.empty(),
+                Text.translatable("screen.stackplus.warning.line_3"),
+                Text.empty(),
+                Text.translatable("screen.stackplus.warning.line_4"),
+                Text.translatable("screen.stackplus.warning.line_5"),
+                Text.translatable("screen.stackplus.warning.line_6"),
+                Text.empty(),
+                Text.translatable("screen.stackplus.warning.line_7"),
+                Text.translatable("screen.stackplus.warning.line_8")
         );
 
         private final StackPlusConfigScreen parent;
+        private final int stackLimit;
 
         StackPlusWarningScreen(StackPlusConfigScreen parent, int stackLimit) {
-            super(Component.translatable("screen.stackplus.warning.title"));
+            super(Text.translatable("screen.stackplus.warning.title"));
             this.parent = parent;
+            this.stackLimit = stackLimit;
         }
 
         @Override
         protected void init() {
             int centerX = this.width / 2;
             int buttonY = Math.min(this.height - 32, 52 + WARNING_LINES.size() * 12 + 24);
-            addRenderableWidget(Button.builder(Component.translatable("button.stackplus.back"), button -> Minecraft.getInstance().setScreenAndShow(parent))
-                    .bounds(centerX - 154, buttonY, 140, 20)
+            addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.back"), button -> MinecraftClient.getInstance().setScreen(parent))
+                    .dimensions(centerX - 154, buttonY, 140, 20)
                     .build());
-            addRenderableWidget(Button.builder(Component.translatable("button.stackplus.continue"), button -> parent.saveUnchecked())
-                    .bounds(centerX + 14, buttonY, 140, 20)
+            addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.continue"), button -> {
+                        parent.saveUnchecked();
+                    })
+                    .dimensions(centerX + 14, buttonY, 140, 20)
                     .build());
         }
 
         @Override
-        public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-            super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-            graphics.centeredText(this.font, this.title, this.width / 2, 18, 0xFFFF5555);
+        public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+            super.render(context, mouseX, mouseY, delta);
+            context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 18, 0xFFFF5555);
             int y = 52;
-            for (Component line : WARNING_LINES) {
-                graphics.centeredText(this.font, line, this.width / 2, y, 0xFFFFFFFF);
+            for (Text line : WARNING_LINES) {
+                context.drawCenteredTextWithShadow(this.textRenderer, line, this.width / 2, y, 0xFFFFFFFF);
                 y += 12;
             }
         }
 
         @Override
-        public void onClose() {
-            Minecraft.getInstance().setScreenAndShow(parent);
+        public void close() {
+            MinecraftClient.getInstance().setScreen(parent);
         }
     }
 }

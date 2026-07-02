@@ -1,7 +1,7 @@
 package chihalu.customstacklimit.mixin.client;
 
 import chihalu.customstacklimit.StackLimitConfig;
-import net.minecraft.world.item.Item;
+import net.minecraft.item.Item;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(value = Item.class, priority = 1500)
 public class ItemClientMixin {
 
-    @Inject(method = "getDefaultMaxStackSize", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "getMaxCount", at = @At("RETURN"), cancellable = true)
     private void customMaxCountClient(CallbackInfoReturnable<Integer> cir) {
         cir.setReturnValue(StackLimitConfig.getAdjustedStackLimit((Item) (Object) this, cir.getReturnValue()));
     }
