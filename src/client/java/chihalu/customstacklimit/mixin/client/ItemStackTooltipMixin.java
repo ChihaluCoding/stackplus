@@ -1,7 +1,6 @@
 package chihalu.customstacklimit.mixin.client;
 
 import chihalu.customstacklimit.StackCountFormatter;
-import chihalu.customstacklimit.StackLimitConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -16,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.List;
 
 /**
- * 短縮表示では分からない正確な個数をツールチップへ追加します。
+ * スタックされたアイテムの正確な個数をツールチップへ追加します。
  */
 @Mixin(ItemStack.class)
 public class ItemStackTooltipMixin {
@@ -32,13 +31,6 @@ public class ItemStackTooltipMixin {
     }
 
     private static boolean shouldAppendExactStackCount(int count) {
-        if (count >= 1000) {
-            return true;
-        }
-        if (StackLimitConfig.getDisplayMode() == StackLimitConfig.DisplayMode.PLUS_99 && count >= 100) {
-            return true;
-        }
-
-        return count > StackLimitConfig.getStackLimit();
+        return count > 1;
     }
 }
