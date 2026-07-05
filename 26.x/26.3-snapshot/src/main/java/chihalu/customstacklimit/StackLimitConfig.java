@@ -11,7 +11,9 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.NumberFormat;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -21,15 +23,17 @@ public class StackLimitConfig {
     public static final int DEFAULT_STACK_LIMIT = 1000;
     public static final int MIN_STACK_LIMIT = 1;
     public static final int MAX_STACK_LIMIT = 1_000_000_000;
-    public static final int WARNING_STACK_LIMIT = 32_767;
-
     private static final String CONFIG_FILE_NAME = "stackplus.properties";
     private static final String STACK_LIMIT_KEY = "stackLimit";
     private static final String DISPLAY_MODE_KEY = "displayMode";
+    private static final String SELECTED_ITEM_COUNT_ALWAYS_VISIBLE_KEY = "selectedItemCountAlwaysVisible";
+    private static final String ITEM_LIMIT_KEY_PREFIX = "item.";
     private static final NumberFormat NUMBER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
     private static final ConfigValues LOADED_CONFIG = loadConfig();
     private static int stackLimit = LOADED_CONFIG.stackLimit();
     private static DisplayMode displayMode = LOADED_CONFIG.displayMode();
+    private static boolean selectedItemCountAlwaysVisible = LOADED_CONFIG.selectedItemCountAlwaysVisible();
+    private static final Map<String, Integer> itemStackLimits = new LinkedHashMap<>(LOADED_CONFIG.itemStackLimits());
 
     public enum DisplayMode {
         COMPACT("compact"),
@@ -75,9 +79,29 @@ public class StackLimitConfig {
         displayMode = mode;
     }
 
-    public static void saveSettings(int stackLimitValue, DisplayMode displayModeValue) {
+    public static boolean isSelectedItemCountAlwaysVisible() {
+        return selectedItemCountAlwaysVisible;
+    }
+
+    public static void setSelectedItemCountAlwaysVisible(boolean value) {
+        selectedItemCountAlwaysVisible = value;
+    }
+
+    public static void saveSettings(int stackLimitValue, DisplayMode displayModeValue, boolean selectedItemCountAlwaysVisibleValue) {
         setStackLimit(stackLimitValue);
         setDisplayMode(displayModeValue);
+        setSelectedItemCountAlwaysVisible(selectedItemCountAlwaysVisibleValue);
+        saveConfig();
+    }
+
+    public static void saveItemStackLimit(Item item, int value) {
+        if (!canApplyConfiguredStackLimit(item, new ItemStack(item).getMaxStackSize())) {
+            itemStackLimits.remove(getItemId(item));
+            saveConfig();
+            return;
+        }
+
+        itemStackLimits.put(getItemId(item), clampStackLimit(value));
         saveConfig();
     }
 
@@ -98,11 +122,25 @@ public class StackLimitConfig {
     }
 
     public static int getAdjustedStackLimit(Item item, int originalLimit) {
+        if (!canApplyConfiguredStackLimit(item, originalLimit)) {
+            return originalLimit;
+        }
+
+        Integer itemLimit = itemStackLimits.get(getItemId(item));
+        if (itemLimit != null) {
+            return itemLimit;
+        }
+
         if (isForcedStackableItem(item)) {
             return stackLimit;
         }
 
         return getAdjustedStackLimit(originalLimit);
+    }
+
+    private static boolean canApplyConfiguredStackLimit(Item item, int originalLimit) {
+        ItemStack sampleStack = new ItemStack(item);
+        return !sampleStack.isDamageableItem() && (originalLimit > 1 || isForcedStackableItem(item));
     }
 
     public static int getAdjustedStackLimit(ItemStack stack, int originalLimit) {
@@ -118,6 +156,8 @@ public class StackLimitConfig {
         Properties properties = new Properties();
         properties.setProperty(STACK_LIMIT_KEY, String.valueOf(stackLimit));
         properties.setProperty(DISPLAY_MODE_KEY, displayMode.getSerializedName());
+        properties.setProperty(SELECTED_ITEM_COUNT_ALWAYS_VISIBLE_KEY, String.valueOf(selectedItemCountAlwaysVisible));
+        itemStackLimits.forEach((itemId, itemLimit) -> properties.setProperty(ITEM_LIMIT_KEY_PREFIX + itemId, String.valueOf(itemLimit)));
 
         Path configPath = getConfigPath();
         try {
@@ -165,10 +205,14 @@ public class StackLimitConfig {
         return BuiltInRegistries.ITEM.getKey(item).getPath();
     }
 
+    private static String getItemId(Item item) {
+        return BuiltInRegistries.ITEM.getKey(item).toString();
+    }
+
     private static ConfigValues loadConfig() {
         Path configPath = getConfigPath();
         if (!Files.exists(configPath)) {
-            return new ConfigValues(DEFAULT_STACK_LIMIT, DisplayMode.COMPACT);
+            return new ConfigValues(DEFAULT_STACK_LIMIT, DisplayMode.COMPACT, false, Map.of());
         }
 
         Properties properties = new Properties();
@@ -176,12 +220,31 @@ public class StackLimitConfig {
             properties.load(input);
             int loadedStackLimit = clampStackLimit(Integer.parseInt(properties.getProperty(STACK_LIMIT_KEY, String.valueOf(DEFAULT_STACK_LIMIT))));
             DisplayMode loadedDisplayMode = DisplayMode.fromSerializedName(properties.getProperty(DISPLAY_MODE_KEY, DisplayMode.COMPACT.getSerializedName()));
-            return new ConfigValues(loadedStackLimit, loadedDisplayMode);
+            boolean loadedSelectedItemCountAlwaysVisible = Boolean.parseBoolean(properties.getProperty(SELECTED_ITEM_COUNT_ALWAYS_VISIBLE_KEY, "false"));
+            return new ConfigValues(loadedStackLimit, loadedDisplayMode, loadedSelectedItemCountAlwaysVisible, loadItemStackLimits(properties));
         } catch (IOException | NumberFormatException exception) {
             CustomStackLimit.LOGGER.warn("StackPlus 設定ファイルの読み込みに失敗しました。既定値を使用します: {}", configPath, exception);
             backupBrokenConfig(configPath);
-            return new ConfigValues(DEFAULT_STACK_LIMIT, DisplayMode.COMPACT);
+            return new ConfigValues(DEFAULT_STACK_LIMIT, DisplayMode.COMPACT, false, Map.of());
         }
+    }
+
+    private static Map<String, Integer> loadItemStackLimits(Properties properties) {
+        Map<String, Integer> loadedItemStackLimits = new LinkedHashMap<>();
+        for (String propertyName : properties.stringPropertyNames()) {
+            if (!propertyName.startsWith(ITEM_LIMIT_KEY_PREFIX)) {
+                continue;
+            }
+
+            String itemId = propertyName.substring(ITEM_LIMIT_KEY_PREFIX.length());
+            if (itemId.isBlank()) {
+                continue;
+            }
+
+            int itemLimit = clampStackLimit(Integer.parseInt(properties.getProperty(propertyName)));
+            loadedItemStackLimits.put(itemId, itemLimit);
+        }
+        return loadedItemStackLimits;
     }
 
     private static Path getConfigPath() {
@@ -206,6 +269,6 @@ public class StackLimitConfig {
         }
     }
 
-    private record ConfigValues(int stackLimit, DisplayMode displayMode) {
+    private record ConfigValues(int stackLimit, DisplayMode displayMode, boolean selectedItemCountAlwaysVisible, Map<String, Integer> itemStackLimits) {
     }
 }

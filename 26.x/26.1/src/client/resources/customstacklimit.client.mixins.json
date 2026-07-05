@@ -4,11 +4,15 @@
 	"compatibilityLevel": "JAVA_25",
 	"client": [
 		"ClientPlayerEntityMixin",
+		"CreativeInventoryListenerMixin",
 		"GuiGraphicsExtractorMixin",
 		"HandledScreenMixin",
+		"HudSelectedItemNameMixin",
 		"ItemClientMixin",
 		"ItemStackClientMixin",
-		"ItemStackTooltipMixin"
+		"ItemStackTooltipMixin",
+		"MultiPlayerGameModeMixin",
+		"ServerboundSetCreativeModeSlotPacketMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

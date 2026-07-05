@@ -14,8 +14,8 @@ If ModMenu is installed, you can change the stack limit from **1** up to **1,000
   The 1.21.x and 26.x builds now use the same StackPlus specification.
 - **ModMenu support:**  
   If ModMenu is installed, you can change the stack limit from the in-game config screen.
-- **Safer large values:**  
-  Values above 32,767 show a warning before saving.
+- **Large value presets:**  
+  Presets include 32K, 1M, 100M, and 1B for quick configuration.
 - **Vanilla durability behavior:**  
   Damageable items such as tools, weapons, armor, shields, and similar equipment remain unstackable.
 - **Better stack count display:**  

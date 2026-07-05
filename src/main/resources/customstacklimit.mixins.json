@@ -4,10 +4,12 @@
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
 		"ContainerMixin",
+		"ContainersMixin",
 		"ItemMixin",
 		"ItemStackMixin",
 		"ItemStackValidatedStreamCodecMixin",
 		"ItemStackWithSlotMixin",
+		"ItemVariantImplMixin",
 		"PlayerInventoryMixin",
 		"SlotMixin"
 	],

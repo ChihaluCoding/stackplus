@@ -45,3 +45,13 @@ docs/
 .codex-backups/
 .lh/
 jar/
+all build/
+test.md
+.codex-backups/26-1-fix-20260702-231603/
+.codex-backups/26-2-parity-20260705-214229/
+.codex-backups/26-3-alpha1-20260702-234349/
+.codex-backups/26x-parity-20260702-225800/
+.codex-backups/26x-projects-20260702-233031/
+.codex-backups/tooltip-count-26x-20260702-235914/
+1.21.x/
+26.x/

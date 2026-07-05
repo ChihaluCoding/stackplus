@@ -3,7 +3,7 @@
 	"id": "stackplus",
 	"version": "${version}",
 	"name": "StackPlus",
-	"description": "You can set the stack size to a maximum of 1,000,000,000, but items with durability cannot be stacked.",
+	"description": "Increase Minecraft stack sizes up to 1,000,000,000 with Mod Menu presets, compact count display, and vanilla-safe handling for damageable items.",
 	"authors": [
 		"chihalu"
 	],
@@ -12,8 +12,11 @@
 	},
 	"license": "MIT",
 	"icon": "assets/stackplus/icon.png",
-	"environment": "client",
+	"environment": "*",
 	"entrypoints": {
+		"main": [
+			"chihalu.customstacklimit.CustomStackLimit"
+		],
 		"client": [
 			"chihalu.customstacklimit.CustomStackLimitClient"
 		],

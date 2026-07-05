@@ -4,6 +4,7 @@
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"ContainerMixin",
+		"ItemScattererMixin",
 		"ItemMixin",
 		"ItemStackMixin",
 		"SlotMixin"
