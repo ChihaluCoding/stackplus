@@ -271,6 +271,135 @@ jobs:
               '{title:$title, url:$url, color:($color|tonumber), description:$desc, footer:{text:$foot}, timestamp:$ts}'
           }
 
+          # ===== 全コメントを取得（ページネーション） =====
+          fetch_all_comments() {
+            local repo="$1" number="$2"
+            local page=1 all='[]'
+            while true; do
+              local resp
+              resp=$(curl -sS \
+                -H "Authorization: token $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/$repo/issues/$number/comments?per_page=100&page=$page")
+              local count
+              count=$(echo "$resp" | jq 'length')
+              if [ "$count" = "0" ] || [ "$count" = "null" ]; then break; fi
+              all=$(echo "$all" | jq --argjson page "$resp" '. + $page')
+              page=$((page + 1))
+            done
+            echo "$all"
+          }
+
+          # ===== Issue イベントを取得（状態変更・ラベル等） =====
+          fetch_issue_events() {
+            local repo="$1" number="$2"
+            local page=1 all='[]'
+            while true; do
+              local resp
+              resp=$(curl -sS \
+                -H "Authorization: token $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/$repo/issues/$number/events?per_page=100&page=$page")
+              local count
+              count=$(echo "$resp" | jq 'length')
+              if [ "$count" = "0" ] || [ "$count" = "null" ]; then break; fi
+              all=$(echo "$all" | jq --argjson page "$resp" '. + $page')
+              page=$((page + 1))
+            done
+            echo "$all"
+          }
+
+          # ===== イベントを embed 用テキストに変換 =====
+          event_to_embed() {
+            local event="$1" actor="$2" data="$3" url="$4"
+            local color title desc
+            case "$event" in
+              closed)
+                color=10038562; title="🔒 クローズ"
+                desc=$(printf '%s' "$data" | jq -r '.commit_id // ""' | sed 's/.*/&/');;
+              reopened)
+                color=3066993; title="♻️ 再オープン"; desc="";;
+              labeled)
+                color=3447003; title="🏷️ ラベル追加"
+                desc=$(printf '%s' "$data" | jq -r '.label.name // "?"');;
+              unlabeled)
+                color=15844367; title="🏷️ ラベル削除"
+                desc=$(printf '%s' "$data" | jq -r '.label.name // "?"');;
+              renamed)
+                color=15844367; title="✏️ タイトル変更"
+                local from to
+                from=$(printf '%s' "$data" | jq -r '.rename.from // "?"')
+                to=$(printf '%s' "$data" | jq -r '.rename.to // "?"')
+                desc=$(printf '**%s** → **%s**' "$from" "$to");;
+              assigned)
+                color=3447003; title="👤 担当者割り当て"
+                desc=$(printf '%s' "$data" | jq -r '.assignee.login // .assignee.name // "?"');;
+              unassigned)
+                color=15844367; title="👤 担当者解除"
+                desc=$(printf '%s' "$data" | jq -r '.assignee.login // .assignee.name // "?"');;
+              milestoned)
+                color=3447003; title="🏁 マイルストーン設定"
+                desc=$(printf '%s' "$data" | jq -r '.milestone.title // "?"');;
+              demilestoned)
+                color=15844367; title="🏁 マイルストーン解除"
+                desc=$(printf '%s' "$data" | jq -r '.milestone.title // "?"');;
+              *)
+                return 1;;
+            esac
+            make_embed "$color" "$title" "$desc" "$url" "by @$actor"
+          }
+
+          # ===== Issue の履歴（コメント＋イベント）をスレッドに投稿 =====
+          post_history() {
+            local repo="$1" number="$2" thread_id="$3" issue_url="$4"
+            local comments events timeline
+
+            comments=$(fetch_all_comments "$repo" "$number")
+            events=$(fetch_issue_events "$repo" "$number")
+
+            # コメントをタイムライン形式に変換
+            local c_timeline
+            c_timeline=$(echo "$comments" | jq -c '[.[] | {type:"comment", ts:.created_at, data:.}]')
+
+            # イベントをタイムライン形式に変換（関連あるもののみ）
+            local e_timeline
+            e_timeline=$(echo "$events" | jq -c '[.[] | select(.event == "closed" or .event == "reopened" or .event == "labeled" or .event == "unlabeled" or .event == "renamed" or .event == "assigned" or .event == "unassigned" or .event == "milestoned" or .event == "demilestoned") | {type:"event", ts:.created_at, data:.}]')
+
+            # 結合して時系列ソート
+            timeline=$(echo "$c_timeline $e_timeline" | jq -s 'add | sort_by(.ts)')
+
+            local total
+            total=$(echo "$timeline" | jq 'length')
+            echo "    履歴 $total 件を投稿中..."
+
+            echo "$timeline" | jq -c '.[]' | while IFS= read -r item; do
+              local t_type t_data t_actor t_url t_body
+              t_type=$(echo "$item" | jq -r '.type')
+              t_data=$(echo "$item" | jq -c '.data')
+
+              if [ "$t_type" = "comment" ]; then
+                t_actor=$(echo "$t_data" | jq -r '.user.login // "unknown"')
+                t_url=$(echo "$t_data" | jq -r '.html_url // ""')
+                t_body=$(echo "$t_data" | jq -r '.body // ""')
+                local embed
+                embed=$(make_embed 3066993 "💬 コメント by @$t_actor" "$t_body" "$t_url" "by @$t_actor")
+                local msg
+                msg=$(jq -c -n --argjson embed "$embed" '{embeds:[$embed]}')
+                discord_api POST "/channels/$thread_id/messages" "$msg" > /dev/null || true
+              else
+                local event_name
+                event_name=$(echo "$t_data" | jq -r '.event')
+                t_actor=$(echo "$t_data" | jq -r '.actor.login // "unknown"')
+                local embed
+                embed=$(event_to_embed "$event_name" "$t_actor" "$t_data" "$issue_url") || continue
+                local msg
+                msg=$(jq -c -n --argjson embed "$embed" '{embeds:[$embed]}')
+                discord_api POST "/channels/$thread_id/messages" "$msg" > /dev/null || true
+              fi
+              sleep 1
+            done
+          }
+
           # ===== 全 Issue を取得（ページネーション） =====
           PAGE=1
           ALL_ISSUES='[]'
@@ -343,6 +472,8 @@ jobs:
                 -H "Accept: application/vnd.github+json" \
                 -d "$PATCH" \
                 "https://api.github.com/repos/$REPO/issues/$NUMBER"
+              # 履歴（コメント＋状態変更）をスレッドに投稿
+              post_history "$REPO" "$NUMBER" "$NEW_THREAD" "$URL"
               # クローズ済みならアーカイブ
               if [ "$STATE" = "closed" ]; then
                 ARCHIVE_TAGS='[]'
