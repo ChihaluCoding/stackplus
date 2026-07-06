@@ -105,21 +105,74 @@ jobs:
             esac
           }
 
-          # ===== Issue 本文にマーカーを埋め込む =====
+          # ===== Issue 本文にマーカーを埋め込む（既存マーカーは置換） =====
           save_thread_id_to_issue() {
             local number="$1" thread_id="$2" body="$3"
             local marker="<!-- discord-thread:$thread_id -->"
-            if ! echo "$body" | grep -q "discord-thread:"; then
-              local new_body
+            local new_body
+            if echo "$body" | grep -q "discord-thread:"; then
+              # 既存マーカーを新しいIDに置換
+              new_body=$(printf '%s' "$body" | sed -E 's/<!-- discord-thread:[0-9]+ -->/'"$marker"'/')
+            else
               new_body=$(printf '%s\n%s' "$body" "$marker")
-              local patch
-              patch=$(jq -n --arg b "$new_body" '{body:$b}')
-              curl -sS -o /dev/null -w "patch issue HTTP %{http_code}\n" \
-                -X PATCH \
-                -H "Authorization: token $GH_TOKEN" \
-                -H "Accept: application/vnd.github+json" \
-                -d "$patch" \
-                "https://api.github.com/repos/$REPO/issues/$number"
+            fi
+            local patch
+            patch=$(jq -n --arg b "$new_body" '{body:$b}')
+            curl -sS -o /dev/null -w "patch issue HTTP %{http_code}\n" \
+              -X PATCH \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -d "$patch" \
+              "https://api.github.com/repos/$REPO/issues/$number"
+          }
+
+          # ===== Issue からフォーラムスレッドを作成（再作成用共通処理） =====
+          create_forum_thread_for_issue() {
+            local number="$1" title="$2" body="$3" url="$4" state="$5" user="$6"
+            local thread_name summary embed tag tags_json payload resp thread_id
+            thread_name=$(printf '[%s] #%s %s' "$REPO" "$number" "$title" | cut -c1-100)
+            summary=$(printf 'Issue #%s by @%s\n%s' "$number" "$user" "$url")
+            embed=$(make_embed 3447003 "🆕 Issue #$number: $title" "$body" "$url" "by @$user • state: $state")
+            tag=$(tag_for_state "$state")
+            tags_json='[]'
+            if [ -n "$tag" ]; then tags_json=$(jq -n --arg t "$tag" '[$t]'); fi
+            payload=$(jq -c -n \
+              --arg name "$thread_name" \
+              --arg content "$summary" \
+              --argjson embed "$embed" \
+              --argjson tags "$tags_json" \
+              '{name:$name, auto_archive_duration:1440, message:{content:$content, embeds:[$embed]}, applied_tags:$tags}')
+            resp=$(discord_api POST "/channels/$DISCORD_FORUM_CHANNEL_ID/threads" "$payload")
+            check_http "$resp" "create forum thread"
+            thread_id=$(echo "$resp" | sed '$d' | jq -r '.id')
+            echo "$thread_id"
+          }
+
+          # ===== スレッド存在確認、なければ再作成 =====
+          ensure_thread_exists() {
+            local thread_id="$1" number="$2" title="$3" body="$4" url="$5" state="$6" user="$7"
+            if [ -z "$thread_id" ]; then
+              echo "No discord-thread marker. Creating new thread..."
+              local new_id
+              new_id=$(create_forum_thread_for_issue "$number" "$title" "$body" "$url" "$state" "$user")
+              save_thread_id_to_issue "$number" "$new_id" "$body"
+              echo "$new_id"
+              return
+            fi
+            # スレッド存在確認
+            local resp code
+            resp=$(curl -sS -w "\n%{http_code}" \
+              -H "Authorization: Bot $DISCORD_BOT_TOKEN" \
+              "https://discord.com/api/v10/channels/$thread_id")
+            code=$(echo "$resp" | tail -n1)
+            if [ "$code" = "404" ] || [ "$code" = "403" ]; then
+              echo "Thread $thread_id no longer exists (HTTP $code). Recreating..."
+              local new_id
+              new_id=$(create_forum_thread_for_issue "$number" "$title" "$body" "$url" "$state" "$user")
+              save_thread_id_to_issue "$number" "$new_id" "$body"
+              echo "$new_id"
+            else
+              echo "$thread_id"
             fi
           }
 
@@ -151,10 +204,7 @@ jobs:
 
           # ===== 2. issue_comment イベント → スレッドへ追記 =====
           if [ "$EVENT_NAME" = "issue_comment" ]; then
-            if [ -z "$THREAD_ID" ]; then
-              echo "No discord-thread marker. Skipping."
-              exit 0
-            fi
+            THREAD_ID=$(ensure_thread_exists "$THREAD_ID" "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_BODY" "$ISSUE_URL" "$ISSUE_STATE" "$ISSUE_USER")
             COMMENT_BODY=$(jq -r '.comment.body // ""' "$GITHUB_EVENT_PATH")
             COMMENT_URL=$(jq -r '.comment.html_url // .issue.html_url' "$GITHUB_EVENT_PATH")
             case "$ACTION" in
@@ -170,10 +220,7 @@ jobs:
 
           # ===== 3. Issue 状態変化 → スレッドへ通知 + タグ切替 =====
           if [ "$EVENT_NAME" = "issues" ]; then
-            if [ -z "$THREAD_ID" ]; then
-              echo "No discord-thread marker. Skipping."
-              exit 0
-            fi
+            THREAD_ID=$(ensure_thread_exists "$THREAD_ID" "$ISSUE_NUMBER" "$ISSUE_TITLE" "$ISSUE_BODY" "$ISSUE_URL" "$ISSUE_STATE" "$ISSUE_USER")
             case "$ACTION" in
               closed)
                 EMBED=$(make_embed 10038562 "🔒 Issue #$ISSUE_NUMBER クローズ" "$ISSUE_BODY" "$ISSUE_URL" "by @$ACTOR • state: closed")
