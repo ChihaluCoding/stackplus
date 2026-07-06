@@ -1,0 +1,363 @@
+name: Discord Forum Notify
+
+on:
+  issues:
+    types: [opened, closed, reopened, edited]
+  issue_comment:
+    types: [created, edited, deleted]
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: '既存のIssueを全てフォーラムに投稿する'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  # ============================================================
+  # リアルタイム通知（Issue / コメント イベント発生時）
+  # ============================================================
+  notify:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send to Discord forum
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_FORUM_CHANNEL_ID: ${{ secrets.DISCORD_FORUM_CHANNEL_ID }}
+          DISCORD_TAG_OPEN: ${{ secrets.DISCORD_TAG_OPEN }}
+          DISCORD_TAG_CLOSED: ${{ secrets.DISCORD_TAG_CLOSED }}
+          DISCORD_TAG_REOPENED: ${{ secrets.DISCORD_TAG_REOPENED }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+        run: |
+          set -euo pipefail
+
+          # ===== GitHub ペイロード取得 =====
+          ISSUE_NUMBER=$(jq -r '.issue.number // empty' "$GITHUB_EVENT_PATH")
+          ISSUE_TITLE=$(jq -r '.issue.title // empty' "$GITHUB_EVENT_PATH")
+          ISSUE_URL=$(jq -r '.issue.html_url // empty' "$GITHUB_EVENT_PATH")
+          ISSUE_STATE=$(jq -r '.issue.state // empty' "$GITHUB_EVENT_PATH")
+          ISSUE_BODY=$(jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH")
+          ISSUE_USER=$(jq -r '.issue.user.login // "unknown"' "$GITHUB_EVENT_PATH")
+          ACTOR=$(jq -r '.sender.login // "unknown"' "$GITHUB_EVENT_PATH")
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          echo "Event=$EVENT_NAME Action=$ACTION Issue=#$ISSUE_NUMBER"
+
+          # ===== Discord API ヘルパー =====
+          discord_api() {
+            local method="$1" path="$2" payload="${3:-}"
+            if [ -z "$payload" ]; then
+              curl -sS -w "\n%{http_code}" -X "$method" \
+                -H "Authorization: Bot $DISCORD_BOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                "https://discord.com/api/v10$path"
+            else
+              curl -sS -w "\n%{http_code}" -X "$method" \
+                -H "Authorization: Bot $DISCORD_BOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "$payload" \
+                "https://discord.com/api/v10$path"
+            fi
+          }
+
+          check_http() {
+            local resp="$1" label="$2"
+            local code body
+            code=$(echo "$resp" | tail -n1)
+            body=$(echo "$resp" | sed '$d')
+            echo "$label -> HTTP $code"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+              echo "Discord API error: $body"
+              exit 1
+            fi
+          }
+
+          make_embed() {
+            local color="$1" title="$2" desc="$3" url="$4" footer="$5"
+            desc=$(printf '%s' "$desc" | cut -c1-4096)
+            jq -c -n \
+              --arg title "$title" \
+              --arg desc "$desc" \
+              --arg url "$url" \
+              --arg color "$color" \
+              --arg foot "$footer" \
+              --arg ts "$NOW" \
+              '{title:$title, url:$url, color:($color|tonumber), description:$desc, footer:{text:$foot}, timestamp:$ts}'
+          }
+
+          get_thread_id() {
+            printf '%s' "$1" | grep -oP '<!-- discord-thread:\K[0-9]+(?= -->)' | tail -n1 || true
+          }
+
+          tag_for_state() {
+            case "$1" in
+              closed) echo "$DISCORD_TAG_CLOSED" ;;
+              open)   echo "$DISCORD_TAG_OPEN" ;;
+              *)      echo "$DISCORD_TAG_REOPENED" ;;
+            esac
+          }
+
+          # ===== Issue 本文にマーカーを埋め込む =====
+          save_thread_id_to_issue() {
+            local number="$1" thread_id="$2" body="$3"
+            local marker="<!-- discord-thread:$thread_id -->"
+            if ! echo "$body" | grep -q "discord-thread:"; then
+              local new_body
+              new_body=$(printf '%s\n%s' "$body" "$marker")
+              local patch
+              patch=$(jq -n --arg b "$new_body" '{body:$b}')
+              curl -sS -o /dev/null -w "patch issue HTTP %{http_code}\n" \
+                -X PATCH \
+                -H "Authorization: token $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                -d "$patch" \
+                "https://api.github.com/repos/$REPO/issues/$number"
+            fi
+          }
+
+          # ===== 1. Issue 作成 → フォーラムに新規投稿 =====
+          if [ "$EVENT_NAME" = "issues" ] && [ "$ACTION" = "opened" ]; then
+            echo "Creating forum thread for new issue #$ISSUE_NUMBER"
+            THREAD_NAME=$(printf '[%s] #%s %s' "$REPO" "$ISSUE_NUMBER" "$ISSUE_TITLE" | cut -c1-100)
+            SUMMARY=$(printf 'Issue #%s by @%s\n%s' "$ISSUE_NUMBER" "$ISSUE_USER" "$ISSUE_URL")
+            EMBED=$(make_embed 3447003 "🆕 Issue #$ISSUE_NUMBER: $ISSUE_TITLE" "$ISSUE_BODY" "$ISSUE_URL" "by @$ISSUE_USER • opened")
+            TAG=$(tag_for_state "$ISSUE_STATE")
+            TAGS_JSON='[]'
+            if [ -n "$TAG" ]; then TAGS_JSON=$(jq -n --arg t "$TAG" '[$t]'); fi
+            PAYLOAD=$(jq -c -n \
+              --arg name "$THREAD_NAME" \
+              --arg content "$SUMMARY" \
+              --argjson embed "$EMBED" \
+              --argjson tags "$TAGS_JSON" \
+              '{name:$name, auto_archive_duration:1440, message:{content:$content, embeds:[$embed]}, applied_tags:$tags}')
+            RESP=$(discord_api POST "/channels/$DISCORD_FORUM_CHANNEL_ID/threads" "$PAYLOAD")
+            check_http "$RESP" "create forum thread"
+            THREAD_ID=$(echo "$RESP" | sed '$d' | jq -r '.id')
+            echo "Created thread $THREAD_ID"
+            save_thread_id_to_issue "$ISSUE_NUMBER" "$THREAD_ID" "$ISSUE_BODY"
+            exit 0
+          fi
+
+          # ===== 共通: thread_id を取得 =====
+          THREAD_ID=$(get_thread_id "$ISSUE_BODY")
+
+          # ===== 2. issue_comment イベント → スレッドへ追記 =====
+          if [ "$EVENT_NAME" = "issue_comment" ]; then
+            if [ -z "$THREAD_ID" ]; then
+              echo "No discord-thread marker. Skipping."
+              exit 0
+            fi
+            COMMENT_BODY=$(jq -r '.comment.body // ""' "$GITHUB_EVENT_PATH")
+            COMMENT_URL=$(jq -r '.comment.html_url // .issue.html_url' "$GITHUB_EVENT_PATH")
+            case "$ACTION" in
+              created) EMBED=$(make_embed 3066993 "💬 新しいコメント" "$COMMENT_BODY" "$COMMENT_URL" "by @$ACTOR • state: $ISSUE_STATE") ;;
+              edited) EMBED=$(make_embed 15844367 "✏️ コメント編集" "$COMMENT_BODY" "$COMMENT_URL" "by @$ACTOR • state: $ISSUE_STATE") ;;
+              deleted) EMBED=$(make_embed 10038562 "🗑️ コメント削除" "(コメントは削除されました)" "$COMMENT_URL" "by @$ACTOR • state: $ISSUE_STATE") ;;
+            esac
+            MSG=$(jq -c -n --argjson embed "$EMBED" '{embeds:[$embed]}')
+            RESP=$(discord_api POST "/channels/$THREAD_ID/messages" "$MSG")
+            check_http "$RESP" "post comment to thread"
+            exit 0
+          fi
+
+          # ===== 3. Issue 状態変化 → スレッドへ通知 + タグ切替 =====
+          if [ "$EVENT_NAME" = "issues" ]; then
+            if [ -z "$THREAD_ID" ]; then
+              echo "No discord-thread marker. Skipping."
+              exit 0
+            fi
+            case "$ACTION" in
+              closed)
+                EMBED=$(make_embed 10038562 "🔒 Issue #$ISSUE_NUMBER クローズ" "$ISSUE_BODY" "$ISSUE_URL" "by @$ACTOR • state: closed")
+                MSG=$(jq -c -n --argjson embed "$EMBED" '{embeds:[$embed]}')
+                RESP=$(discord_api POST "/channels/$THREAD_ID/messages" "$MSG")
+                check_http "$RESP" "post close notification"
+                TAGS_JSON='[]'
+                if [ -n "$DISCORD_TAG_CLOSED" ]; then TAGS_JSON=$(jq -n --arg t "$DISCORD_TAG_CLOSED" '[$t]'); fi
+                ARCHIVE=$(jq -c -n --argjson tags "$TAGS_JSON" '{archived:true, locked:true, applied_tags:$tags}')
+                RESP=$(discord_api PATCH "/channels/$THREAD_ID" "$ARCHIVE")
+                check_http "$RESP" "archive thread"
+                ;;
+              reopened)
+                EMBED=$(make_embed 3066993 "♻️ Issue #$ISSUE_NUMBER 再オープン" "$ISSUE_BODY" "$ISSUE_URL" "by @$ACTOR • state: open")
+                MSG=$(jq -c -n --argjson embed "$EMBED" '{embeds:[$embed]}')
+                RESP=$(discord_api POST "/channels/$THREAD_ID/messages" "$MSG")
+                check_http "$RESP" "post reopen notification"
+                TAGS_JSON='[]'
+                if [ -n "$DISCORD_TAG_OPEN" ]; then TAGS_JSON=$(jq -n --arg t "$DISCORD_TAG_OPEN" '[$t]'); fi
+                UNARCHIVE=$(jq -c -n --argjson tags "$TAGS_JSON" '{archived:false, locked:false, applied_tags:$tags}')
+                RESP=$(discord_api PATCH "/channels/$THREAD_ID" "$UNARCHIVE")
+                check_http "$RESP" "unarchive thread"
+                ;;
+              edited)
+                EMBED=$(make_embed 15844367 "✏️ Issue #$ISSUE_NUMBER 編集" "$ISSUE_BODY" "$ISSUE_URL" "by @$ACTOR • state: $ISSUE_STATE")
+                MSG=$(jq -c -n --argjson embed "$EMBED" '{embeds:[$embed]}')
+                RESP=$(discord_api POST "/channels/$THREAD_ID/messages" "$MSG")
+                check_http "$RESP" "post edit notification"
+                ;;
+            esac
+            exit 0
+          fi
+
+  # ============================================================
+  # バックフィル（既存Issueを全てフォーラムに投稿）
+  # ============================================================
+  backfill:
+    if: github.event_name == 'workflow_dispatch' && inputs.backfill
+    runs-on: ubuntu-latest
+    steps:
+      - name: Backfill existing issues to Discord forum
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_FORUM_CHANNEL_ID: ${{ secrets.DISCORD_FORUM_CHANNEL_ID }}
+          DISCORD_TAG_OPEN: ${{ secrets.DISCORD_TAG_OPEN }}
+          DISCORD_TAG_CLOSED: ${{ secrets.DISCORD_TAG_CLOSED }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          discord_api() {
+            local method="$1" path="$2" payload="${3:-}"
+            if [ -z "$payload" ]; then
+              curl -sS -w "\n%{http_code}" -X "$method" \
+                -H "Authorization: Bot $DISCORD_BOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                "https://discord.com/api/v10$path"
+            else
+              curl -sS -w "\n%{http_code}" -X "$method" \
+                -H "Authorization: Bot $DISCORD_BOT_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "$payload" \
+                "https://discord.com/api/v10$path"
+            fi
+          }
+
+          check_http() {
+            local resp="$1" label="$2"
+            local code body
+            code=$(echo "$resp" | tail -n1)
+            body=$(echo "$resp" | sed '$d')
+            echo "$label -> HTTP $code"
+            if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+              echo "Discord API error: $body"
+            fi
+          }
+
+          get_thread_id() {
+            printf '%s' "$1" | grep -oP '<!-- discord-thread:\K[0-9]+(?= -->)' | tail -n1 || true
+          }
+
+          make_embed() {
+            local color="$1" title="$2" desc="$3" url="$4" footer="$5"
+            desc=$(printf '%s' "$desc" | cut -c1-4096)
+            jq -c -n \
+              --arg title "$title" \
+              --arg desc "$desc" \
+              --arg url "$url" \
+              --arg color "$color" \
+              --arg foot "$footer" \
+              --arg ts "$NOW" \
+              '{title:$title, url:$url, color:($color|tonumber), description:$desc, footer:{text:$foot}, timestamp:$ts}'
+          }
+
+          # ===== 全 Issue を取得（ページネーション） =====
+          PAGE=1
+          ALL_ISSUES='[]'
+          while true; do
+            RESP=$(curl -sS \
+              -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/issues?state=all&sort=created&direction=asc&per_page=100&page=$PAGE")
+            COUNT=$(echo "$RESP" | jq 'length')
+            if [ "$COUNT" = "0" ] || [ "$COUNT" = "null" ]; then
+              break
+            fi
+            # PR を除外
+            RESP=$(echo "$RESP" | jq '[.[] | select(.pull_request == null)]')
+            ALL_ISSUES=$(echo "$ALL_ISSUES" | jq --argjson page "$RESP" '. + $page')
+            echo "Page $PAGE: $COUNT issues"
+            PAGE=$((PAGE + 1))
+          done
+
+          TOTAL=$(echo "$ALL_ISSUES" | jq 'length')
+          echo "Total issues: $TOTAL"
+
+          # ===== 各 Issue を処理 =====
+          echo "$ALL_ISSUES" | jq -c '.[]' | while IFS= read -r issue; do
+            NUMBER=$(echo "$issue" | jq -r '.number')
+            TITLE=$(echo "$issue" | jq -r '.title')
+            BODY=$(echo "$issue" | jq -r '.body // ""')
+            URL=$(echo "$issue" | jq -r '.html_url')
+            STATE=$(echo "$issue" | jq -r '.state')
+            USER=$(echo "$issue" | jq -r '.user.login // "unknown"')
+
+            THREAD_ID=$(get_thread_id "$BODY")
+
+            if [ -n "$THREAD_ID" ]; then
+              echo "  #$NUMBER already has thread $THREAD_ID, skipping."
+              continue
+            fi
+
+            echo "  #$NUMBER: creating forum thread..."
+            THREAD_NAME=$(printf '[%s] #%s %s' "$REPO" "$NUMBER" "$TITLE" | cut -c1-100)
+            SUMMARY=$(printf 'Issue #%s by @%s\n%s' "$NUMBER" "$USER" "$URL")
+            EMBED=$(make_embed 3447003 "🆕 Issue #$NUMBER: $TITLE" "$BODY" "$URL" "by @$USER • state: $STATE")
+
+            TAG=""
+            if [ "$STATE" = "closed" ]; then TAG="$DISCORD_TAG_CLOSED"
+            else TAG="$DISCORD_TAG_OPEN"
+            fi
+            TAGS_JSON='[]'
+            if [ -n "$TAG" ]; then TAGS_JSON=$(jq -n --arg t "$TAG" '[$t]'); fi
+
+            PAYLOAD=$(jq -c -n \
+              --arg name "$THREAD_NAME" \
+              --arg content "$SUMMARY" \
+              --argjson embed "$EMBED" \
+              --argjson tags "$TAGS_JSON" \
+              '{name:$name, auto_archive_duration:1440, message:{content:$content, embeds:[$embed]}, applied_tags:$tags}')
+
+            RESP=$(discord_api POST "/channels/$DISCORD_FORUM_CHANNEL_ID/threads" "$PAYLOAD")
+            HTTP_CODE=$(echo "$RESP" | tail -n1)
+            if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+              NEW_THREAD=$(echo "$RESP" | sed '$d' | jq -r '.id')
+              echo "    Created thread $NEW_THREAD"
+              # Issue 本文にマーカーを埋め込む
+              MARKER="<!-- discord-thread:$NEW_THREAD -->"
+              NEW_BODY=$(printf '%s\n%s' "$BODY" "$MARKER")
+              PATCH=$(jq -n --arg b "$NEW_BODY" '{body:$b}')
+              curl -sS -o /dev/null \
+                -X PATCH \
+                -H "Authorization: token $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                -d "$PATCH" \
+                "https://api.github.com/repos/$REPO/issues/$NUMBER"
+              # クローズ済みならアーカイブ
+              if [ "$STATE" = "closed" ]; then
+                ARCHIVE_TAGS='[]'
+                if [ -n "$DISCORD_TAG_CLOSED" ]; then ARCHIVE_TAGS=$(jq -n --arg t "$DISCORD_TAG_CLOSED" '[$t]'); fi
+                ARCHIVE=$(jq -c -n --argjson tags "$ARCHIVE_TAGS" '{archived:true, locked:true, applied_tags:$tags}')
+                discord_api PATCH "/channels/$NEW_THREAD" "$ARCHIVE" > /dev/null
+                echo "    Archived (closed issue)"
+              fi
+            else
+              echo "    Failed: HTTP $HTTP_CODE"
+              echo "$RESP" | sed '$d'
+            fi
+
+            # Discord レート制限対策（2秒待機）
+            sleep 2
+          done
+
+          echo "Backfill complete."
