@@ -1,0 +1,18 @@
+{
+	"required": true,
+	"package": "chihalu.customstacklimit.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"ContainerMixin",
+		"ItemScattererMixin",
+		"ItemMixin",
+		"ItemStackMixin",
+		"SlotMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

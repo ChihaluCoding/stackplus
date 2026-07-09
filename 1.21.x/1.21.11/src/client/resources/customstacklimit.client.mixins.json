@@ -1,0 +1,16 @@
+{
+	"required": true,
+	"package": "chihalu.customstacklimit.mixin.client",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"CreativeInventoryListenerMixin",
+		"GuiGraphicsExtractorMixin",
+		"HudSelectedItemNameMixin",
+		"ItemStackTooltipMixin",
+		"MultiPlayerGameModeMixin",
+		"ServerboundSetCreativeModeSlotPacketMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
