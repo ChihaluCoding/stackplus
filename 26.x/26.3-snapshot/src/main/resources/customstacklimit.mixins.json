@@ -3,14 +3,21 @@
 	"package": "chihalu.customstacklimit.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
+		"AbstractChestedHorseSaveDataMixin",
+		"BundleItemMixin",
+		"ContainerHelperSaveDataMixin",
 		"ContainerMixin",
 		"ContainersMixin",
+		"GiveCommandMixin",
 		"HopperBlockEntityMixin",
+		"ItemEntityMixin",
+		"ItemEntitySaveDataMixin",
 		"ItemMixin",
 		"ItemStackMixin",
-		"ItemStackValidatedStreamCodecMixin",
+		"ItemStackTemplateMixin",
 		"ItemStackWithSlotMixin",
-		"PlayerInventoryMixin",
+		"ItemStackValidatedStreamCodecMixin",
+		"PlayerSaveDataMixin",
 		"SlotMixin"
 	],
 	"injectors": {

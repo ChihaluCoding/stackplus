@@ -21,18 +21,12 @@ public abstract class GuiGraphicsExtractorMixin {
     private static final float SLOT_SIZE = 16.0F;
     private static final float AUTO_FIT_MAX_WIDTH = 15.0F;
     private static final float THREE_CHARACTER_SCALE = 0.9F;
-    private static final ThreadLocal<ItemStack> STACKPLUS_DECORATION_STACK = new ThreadLocal<>();
 
     @Shadow
     private Matrix3x2fStack pose;
 
     @Shadow
     public abstract void text(Font font, Component component, int x, int y, int color, boolean dropShadow);
-
-    @Inject(method = "itemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;IILjava/lang/String;)V", at = @At("HEAD"))
-    private void captureDecorationStack(Font font, ItemStack stack, int x, int y, String countLabel, CallbackInfo ci) {
-        STACKPLUS_DECORATION_STACK.set(stack);
-    }
 
     @Inject(method = "itemCount", at = @At("HEAD"), cancellable = true)
     private void renderCustomItemCount(Font font, ItemStack stack, int x, int y, String countLabel, CallbackInfo ci) {
@@ -109,10 +103,5 @@ public abstract class GuiGraphicsExtractorMixin {
         }
 
         return count >= 1000;
-    }
-
-    @Inject(method = "itemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;IILjava/lang/String;)V", at = @At("RETURN"))
-    private void clearDecorationStack(Font font, ItemStack stack, int x, int y, String countLabel, CallbackInfo ci) {
-        STACKPLUS_DECORATION_STACK.remove();
     }
 }

@@ -3,13 +3,9 @@
 	"package": "chihalu.customstacklimit.mixin.client",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
-		"ClientPlayerEntityMixin",
 		"CreativeInventoryListenerMixin",
 		"GuiGraphicsExtractorMixin",
-		"HandledScreenMixin",
 		"HudSelectedItemNameMixin",
-		"ItemClientMixin",
-		"ItemStackClientMixin",
 		"ItemStackTooltipMixin",
 		"MultiPlayerGameModeMixin",
 		"ServerboundSetCreativeModeSlotPacketMixin"

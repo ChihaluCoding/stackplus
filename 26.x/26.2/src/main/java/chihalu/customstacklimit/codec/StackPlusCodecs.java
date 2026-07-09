@@ -11,7 +11,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * vanillaの保存用ItemStack CODECに残る99個制限をStackPlusの最大許可値へ拡張します。
+ * vanillaの保存用ItemStack CODECに残る99個制限を、必要な保存経路だけで拡張します。
  */
 public final class StackPlusCodecs {
     public static final MapCodec<ItemStack> ITEM_STACK_MAP_CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
@@ -21,6 +21,8 @@ public final class StackPlusCodecs {
             DataComponentPatch.CODEC.optionalFieldOf("components", DataComponentPatch.EMPTY)
                     .forGetter(ItemStack::getComponentsPatch)
     ).apply(instance, ItemStack::new));
+
+    public static final Codec<ItemStack> ITEM_STACK_CODEC = Codec.lazyInitialized(ITEM_STACK_MAP_CODEC::codec);
 
     public static final Codec<ItemStackWithSlot> ITEM_STACK_WITH_SLOT_CODEC = RecordCodecBuilder.create(instance -> instance.group(
             ExtraCodecs.optionalAlwaysPresentFieldOf(ExtraCodecs.UNSIGNED_BYTE, "Slot", 0)

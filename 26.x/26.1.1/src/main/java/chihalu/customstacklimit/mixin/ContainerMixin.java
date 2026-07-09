@@ -16,7 +16,11 @@ public interface ContainerMixin {
 
     @Inject(method = "getMaxStackSize", at = @At("RETURN"), cancellable = true)
     private void customContainerMaxCount(CallbackInfoReturnable<Integer> cir) {
-        cir.setReturnValue(Math.max(cir.getReturnValue(), StackLimitConfig.getStackLimit()));
+        int original = cir.getReturnValue();
+        if (original <= 1) {
+            return;
+        }
+        cir.setReturnValue(Math.max(original, StackLimitConfig.getStackLimit()));
     }
 
     @Inject(method = "getMaxStackSize(Lnet/minecraft/world/item/ItemStack;)I", at = @At("RETURN"), cancellable = true)

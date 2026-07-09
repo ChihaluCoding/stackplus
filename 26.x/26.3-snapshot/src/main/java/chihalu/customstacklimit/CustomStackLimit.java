@@ -14,11 +14,5 @@ public class CustomStackLimit implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		// このコードはMinecraftがMod読み込み準備完了状態になると直ちに実行されます。
-		// ただし、一部のもの（リソースなど）はまだ初期化されていない可能性があります。
-		// 注意深く進めてください。
-
-		LOGGER.info("CustomStackLimit Mod が初期化されました！");
-		LOGGER.info("CustomStackLimit: 通常アイテムのスタック数が1000個に設定されました");
 	}
 }
