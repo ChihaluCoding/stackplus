@@ -3,11 +3,10 @@ pluginManagement {
 		maven {
 			name = 'Fabric'
 			url = 'https://maven.fabricmc.net/'
-}
-
-// Should match your modid
-rootProject.name = 'stackplus'
+		}
 		mavenCentral()
 		gradlePluginPortal()
 	}
 }
+
+rootProject.name = 'stackplus-1.21.x'
