@@ -1,4 +1,4 @@
-﻿{
+{
   "button.stackplus.back": "Back",
   "button.stackplus.add_preset": "Add",
   "button.stackplus.cancel": "Cancel",
@@ -36,13 +36,13 @@
   "screen.stackplus.config.preset.64": "64",
   "screen.stackplus.config.preset.999": "999",
   "screen.stackplus.config.presets_label": "Presets",
-  "screen.stackplus.config.selected_item_count": "Item name count: %s",
+  "screen.stackplus.config.selected_item_count": "Item count display: %s",
   "screen.stackplus.config.selected_item_count.always": "Always",
   "screen.stackplus.config.selected_item_count.off": "Off",
   "screen.stackplus.config.selected_item_count.on_switch": "On switch",
-  "screen.stackplus.config.selected_item_count_position": "Count position: %s",
-  "screen.stackplus.config.selected_item_count_position.beside": "Beside name",
-  "screen.stackplus.config.selected_item_count_position.below": "Below name",
+  "screen.stackplus.config.selected_item_count_position": "Item count position: %s",
+  "screen.stackplus.config.selected_item_count_position.beside": "Right side",
+  "screen.stackplus.config.selected_item_count_position.below": "Below",
   "screen.stackplus.config.stack_limit": "Max stack size: %s",
   "screen.stackplus.config.stack_limit_label": "Max stack size",
   "screen.stackplus.config.title": "StackPlus Settings",
