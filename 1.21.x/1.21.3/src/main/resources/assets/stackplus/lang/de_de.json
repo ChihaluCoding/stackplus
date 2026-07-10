@@ -36,7 +36,7 @@
   "screen.stackplus.config.preset.64": "64",
   "screen.stackplus.config.preset.999": "999",
   "screen.stackplus.config.presets_label": "Voreinstellungen",
-  "screen.stackplus.config.selected_item_count": "Item-Namenszahl: %s",
+  "screen.stackplus.config.selected_item_count": "Anzeige der Gegenstandsanzahl: %s",
   "screen.stackplus.config.selected_item_count.always": "Immer",
   "screen.stackplus.config.selected_item_count.off": "Aus",
   "screen.stackplus.config.selected_item_count.on_switch": "Nur beim Wechsel",
