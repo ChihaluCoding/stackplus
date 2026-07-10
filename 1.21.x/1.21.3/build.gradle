@@ -77,3 +77,33 @@ publishing {
 		}
 	}
 }
+def prismInstancesRoot = new File(System.getenv('APPDATA'), 'PrismLauncher/instances')
+def prismInstanceName = providers.gradleProperty('prismInstanceName').orElse(providers.gradleProperty('minecraft_version'))
+def prismModsDir = prismInstanceName.map { new File(prismInstancesRoot, "${it}/minecraft/mods") }
+def deployArchiveBaseName = providers.gradleProperty('archives_base_name').get()
+
+tasks.register('deployToPrismMods') {
+	doLast {
+		def outputJarCandidates = fileTree(layout.buildDirectory.dir('libs').get().asFile) {
+			include "${deployArchiveBaseName}-*.jar"
+			exclude "${deployArchiveBaseName}-*-sources.jar"
+		}.files.sort { a, b -> a.lastModified() <=> b.lastModified() }
+		if (outputJarCandidates.isEmpty()) {
+			throw new GradleException("配置対象の jar が build/libs に見つかりません: ${deployArchiveBaseName}")
+		}
+		def outputJar = outputJarCandidates.last()
+		def targetDir = prismModsDir.get()
+		targetDir.mkdirs()
+		fileTree(targetDir) {
+			include "${deployArchiveBaseName}-*.jar"
+		}.files.each { it.delete() }
+		copy {
+			from outputJar
+			into targetDir
+		}
+	}
+}
+
+tasks.named('build') {
+	finalizedBy tasks.named('deployToPrismMods')
+}

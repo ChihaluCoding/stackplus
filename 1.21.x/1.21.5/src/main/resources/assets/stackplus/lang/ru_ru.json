@@ -36,7 +36,7 @@
   "screen.stackplus.config.preset.64": "64",
   "screen.stackplus.config.preset.999": "999",
   "screen.stackplus.config.presets_label": "Пресеты",
-  "screen.stackplus.config.selected_item_count": "Количество в имени предмета: %s",
+  "screen.stackplus.config.selected_item_count": "Отображение количества предметов: %s",
   "screen.stackplus.config.selected_item_count.always": "Всегда",
   "screen.stackplus.config.selected_item_count.off": "Выкл.",
   "screen.stackplus.config.selected_item_count.on_switch": "Только при переключении",
