@@ -1,5 +1,5 @@
 plugins {
-	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
 	id 'maven-publish'
 }
 
@@ -10,11 +10,6 @@ base {
 }
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
 	maven {
 		name = "TerraformersMC"
 		url = "https://maven.terraformersmc.com/releases/"
@@ -25,12 +20,11 @@ loom {
 	splitEnvironmentSourceSets()
 
 	mods {
-		"customstacklimit" {
+		"stackplus" {
 			sourceSet sourceSets.main
 			sourceSet sourceSets.client
 		}
 	}
-
 }
 
 fabricApi {
@@ -40,14 +34,11 @@ fabricApi {
 }
 
 dependencies {
-	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
-	
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
 }
 
 processResources {
@@ -60,17 +51,14 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 25
+	it.options.release = 21
 }
 
 java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
 	withSourcesJar()
 
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 jar {
@@ -78,23 +66,44 @@ jar {
 	inputs.property "projectName", projectName
 
 	from("LICENSE") {
-		rename { "${it}_$projectName"}
+		rename { "${it}_${projectName}" }
 	}
 }
 
-// configure the maven publication
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
 			from components.java
 		}
 	}
+}
+def prismInstancesRoot = new File(System.getenv('APPDATA'), 'PrismLauncher/instances')
+def prismInstanceName = providers.gradleProperty('prismInstanceName').orElse(providers.gradleProperty('minecraft_version'))
+def prismModsDir = prismInstanceName.map { new File(prismInstancesRoot, "${it}/minecraft/mods") }
+def deployArchiveBaseName = providers.gradleProperty('archives_base_name').get()
 
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
+tasks.register('deployToPrismMods') {
+	doLast {
+		def outputJarCandidates = fileTree(layout.buildDirectory.dir('libs').get().asFile) {
+			include "${deployArchiveBaseName}-*.jar"
+			exclude "${deployArchiveBaseName}-*-sources.jar"
+		}.files.sort { a, b -> a.lastModified() <=> b.lastModified() }
+		if (outputJarCandidates.isEmpty()) {
+			throw new GradleException("配置対象の jar が build/libs に見つかりません: ${deployArchiveBaseName}")
+		}
+		def outputJar = outputJarCandidates.last()
+		def targetDir = prismModsDir.get()
+		targetDir.mkdirs()
+		fileTree(targetDir) {
+			include "${deployArchiveBaseName}-*.jar"
+		}.files.each { it.delete() }
+		copy {
+			from outputJar
+			into targetDir
+		}
 	}
+}
+
+tasks.named('build') {
+	finalizedBy tasks.named('deployToPrismMods')
 }
