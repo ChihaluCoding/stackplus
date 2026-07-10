@@ -1,0 +1,18 @@
+{
+	"required": true,
+	"package": "chihalu.stackplus.mixin.client",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"ClientPlayerInteractionManagerMixin",
+		"CreativeInventoryListenerMixin",
+		"CreativeInventoryActionC2SPacketMixin",
+		"GuiGraphicsExtractorMixin",
+		"InGameHudSelectedItemNameMixin",
+		"ItemClientMixin",
+		"ItemStackClientMixin",
+		"ItemStackTooltipMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
