@@ -36,7 +36,7 @@
   "screen.stackplus.config.preset.64": "64",
   "screen.stackplus.config.preset.999": "999",
   "screen.stackplus.config.presets_label": "프리셋",
-  "screen.stackplus.config.selected_item_count": "아이템 이름 수: %s",
+  "screen.stackplus.config.selected_item_count": "아이템 개수 표시: %s",
   "screen.stackplus.config.selected_item_count.always": "항상",
   "screen.stackplus.config.selected_item_count.off": "끔",
   "screen.stackplus.config.selected_item_count.on_switch": "전환 시만",
