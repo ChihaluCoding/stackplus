@@ -3,11 +3,13 @@
 	"id": "stackplus",
 	"version": "${version}",
 	"name": "StackPlus",
-	"description": "Increase Minecraft stack sizes up to 1,000,000,000 with Mod Menu presets, compact count display, and vanilla-safe handling for damageable items.",
+	"description": "We are increasing the item stack limit to a maximum of 1,000,000,000.",
 	"authors": [
 		"chihalu"
 	],
 	"contact": {
+		"homepage": "https://chihalucoding.github.io/stackplus-release-note/",
+		"issues": "https://github.com/ChihaluCoding/stackplus/issues",
 		"sources": "https://github.com/ChihaluCoding/CustomStackLimit?tab=readme-ov-file"
 	},
 	"license": "MIT",
@@ -15,28 +17,31 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"chihalu.customstacklimit.CustomStackLimit"
+			"chihalu.stackplus.CustomStackLimit"
 		],
 		"client": [
-			"chihalu.customstacklimit.CustomStackLimitClient"
+			"chihalu.stackplus.CustomStackLimitClient"
 		],
 		"modmenu": [
-			"chihalu.customstacklimit.modmenu.StackPlusModMenuIntegration"
+			"chihalu.stackplus.modmenu.StackPlusModMenuIntegration"
 		],
 		"fabric-datagen": [
-			"chihalu.customstacklimit.CustomStackLimitDataGenerator"
+			"chihalu.stackplus.CustomStackLimitDataGenerator"
 		]
 	},
 	"mixins": [
-		"customstacklimit.mixins.json",
+		"stackplus.mixins.json",
 		{
-			"config": "customstacklimit.client.mixins.json",
+			"config": "stackplus.client.mixins.json",
 			"environment": "client"
 		}
 	],
 	"depends": {
 		"fabricloader": ">=0.19.3",
-		"minecraft": "26.3-snapshot-2",
+		"minecraft": [
+			"26.3-snapshot-2",
+			"26.3-alpha.2"
+		],
 		"java": ">=25",
 		"fabric-api": "*"
 	},
