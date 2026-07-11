@@ -31,6 +31,9 @@ public class StackLimitConfig {
     private static final ConfigValues LOADED_CONFIG = loadConfig();
     private static int stackLimit = LOADED_CONFIG.stackLimit();
     private static DisplayMode displayMode = LOADED_CONFIG.displayMode();
+    private static volatile boolean serverRulesActive;
+    private static volatile boolean remoteSession;
+    private static int localStackLimit;
 
     public enum DisplayMode {
         COMPACT("compact"),
@@ -64,7 +67,53 @@ public class StackLimitConfig {
         return stackLimit;
     }
 
+    public static String exportStackRules() {
+        return Integer.toString(stackLimit);
+    }
+
+    public static synchronized void applyServerStackRules(String serializedRules) {
+        int serverStackLimit;
+        try {
+            serverStackLimit = clampStackLimit(Integer.parseInt(serializedRules));
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Invalid StackPlus server rules", exception);
+        }
+        if (!serverRulesActive) {
+            localStackLimit = stackLimit;
+        }
+        stackLimit = serverStackLimit;
+        serverRulesActive = true;
+    }
+
+    public static synchronized void restoreLocalStackRules() {
+        if (!serverRulesActive) {
+            return;
+        }
+        stackLimit = localStackLimit;
+        serverRulesActive = false;
+    }
+
+    public static boolean areServerRulesActive() {
+        return serverRulesActive;
+    }
+
+    public static void beginRemoteSession() {
+        remoteSession = true;
+    }
+
+    public static synchronized void endRemoteSession() {
+        remoteSession = false;
+        restoreLocalStackRules();
+    }
+
+    public static boolean areStackRulesEnabled() {
+        return !remoteSession || serverRulesActive;
+    }
+
     public static void setStackLimit(int value) {
+        if (serverRulesActive) {
+            return;
+        }
         stackLimit = clampStackLimit(value);
     }
 
@@ -91,6 +140,9 @@ public class StackLimitConfig {
     }
 
     public static int getAdjustedStackLimit(int originalLimit) {
+        if (!areStackRulesEnabled()) {
+            return originalLimit;
+        }
         if (originalLimit <= 1) {
             return originalLimit;
         }
@@ -99,6 +151,9 @@ public class StackLimitConfig {
     }
 
     public static int getAdjustedStackLimit(Item item, int originalLimit) {
+        if (!areStackRulesEnabled()) {
+            return originalLimit;
+        }
         if (isForcedStackableItem(item)) {
             return stackLimit;
         }
@@ -112,12 +167,13 @@ public class StackLimitConfig {
         }
 
         int adjustedLimit = getAdjustedStackLimit(stack.getItem(), originalLimit);
-        return Math.max(adjustedLimit, stack.getCount());
+        return StackLimitMath.effectiveStackLimit(
+                areStackRulesEnabled(), originalLimit, adjustedLimit, stack.getCount());
     }
 
     private static void saveConfig() {
         Properties properties = new Properties();
-        properties.setProperty(STACK_LIMIT_KEY, String.valueOf(stackLimit));
+        properties.setProperty(STACK_LIMIT_KEY, String.valueOf(serverRulesActive ? localStackLimit : stackLimit));
         properties.setProperty(DISPLAY_MODE_KEY, displayMode.getSerializedName());
 
         Path configPath = getConfigPath();
