@@ -10,7 +10,7 @@
 	"contact": {
 		"homepage": "https://chihalucoding.github.io/stackplus-release-note/",
 		"issues": "https://github.com/ChihaluCoding/stackplus/issues",
-		"sources": "https://github.com/ChihaluCoding/CustomStackLimit?tab=readme-ov-file"
+		"sources": "https://github.com/ChihaluCoding/stackplus"
 	},
 	"license": "MIT",
 	"icon": "assets/stackplus/icon.png",
@@ -38,7 +38,7 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.19.3",
-		"minecraft": ">=1.21.1",
+		"minecraft": ">=1.21.1 <1.21.2",
 		"java": ">=21",
 		"fabric-api": "*"
 	},

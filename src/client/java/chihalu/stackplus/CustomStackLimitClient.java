@@ -1,5 +1,7 @@
 package chihalu.stackplus;
 
+import chihalu.stackplus.network.StackRulesClientNetworking;
+
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,8 +11,10 @@ public class CustomStackLimitClient implements ClientModInitializer {
 	
 	@Override
 	public void onInitializeClient() {
+		StackRulesClientNetworking.register();
+		StackPlusIssueReportCommand.register();
 		StackPlusUpdateNotifier.register();
-		LOGGER.info("CustomStackLimit (クライアント専用) Mod が初期化されました！");
+		LOGGER.info("StackPlus クライアントが初期化されました");
 		LOGGER.info("CustomStackLimit: 通常アイテムのスタック数が{}個に設定されました", StackLimitConfig.getStackLimit());
 	}
 }
