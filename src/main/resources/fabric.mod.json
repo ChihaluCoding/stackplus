@@ -8,12 +8,15 @@
 		"chihalu"
 	],
 	"contact": {
-		"sources": "https://github.com/ChihaluCoding/CustomStackLimit?tab=readme-ov-file"
+		"sources": "https://github.com/ChihaluCoding/stackplus"
 	},
 	"license": "MIT",
 	"icon": "assets/stackplus/icon.png",
-	"environment": "client",
+	"environment": "*",
 	"entrypoints": {
+		"main": [
+			"chihalu.customstacklimit.CustomStackLimit"
+		],
 		"client": [
 			"chihalu.customstacklimit.CustomStackLimitClient"
 		],
@@ -33,7 +36,7 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.19.3",
-		"minecraft": ">=1.21 <1.22",
+		"minecraft": ">=1.21 <1.21.1",
 		"java": ">=21",
 		"fabric-api": "*"
 	},
