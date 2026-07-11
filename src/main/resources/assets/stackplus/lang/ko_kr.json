@@ -56,5 +56,8 @@
   "screen.stackplus.item_selection.selected_title": "선택된 아이템",
   "screen.stackplus.item_selection.title": "아이템별 제한",
   "screen.stackplus.item_selection.value": "클릭해서 %s로 설정 / Shift+클릭으로 여러 개 선택",
+  "screen.stackplus.config.selected_item_count_position": "아이템 수량 위치: %s",
+  "screen.stackplus.config.selected_item_count_position.beside": "오른쪽",
+  "screen.stackplus.config.selected_item_count_position.below": "아래",
   "tooltip.stackplus.count": "개수: %s"
 }
