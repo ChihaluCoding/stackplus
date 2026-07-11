@@ -56,5 +56,8 @@
   "screen.stackplus.item_selection.selected_title": "Objeto seleccionado",
   "screen.stackplus.item_selection.title": "Límites por objeto",
   "screen.stackplus.item_selection.value": "Haz clic para establecer %s / Shift+clic para seleccionar varios",
+  "screen.stackplus.config.selected_item_count_position": "Posición de la cantidad de objetos: %s",
+  "screen.stackplus.config.selected_item_count_position.beside": "A la derecha",
+  "screen.stackplus.config.selected_item_count_position.below": "Debajo",
   "tooltip.stackplus.count": "Cantidad: %s"
 }

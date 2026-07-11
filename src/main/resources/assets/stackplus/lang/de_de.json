@@ -56,5 +56,8 @@
   "screen.stackplus.item_selection.selected_title": "Ausgewähltes Item",
   "screen.stackplus.item_selection.title": "Itemspezifische Limits",
   "screen.stackplus.item_selection.value": "Klicken für %s / Umschalt-Klick für Mehrfachauswahl",
+  "screen.stackplus.config.selected_item_count_position": "Position der Gegenstandsanzahl: %s",
+  "screen.stackplus.config.selected_item_count_position.beside": "Rechts",
+  "screen.stackplus.config.selected_item_count_position.below": "Darunter",
   "tooltip.stackplus.count": "Anzahl: %s"
 }
