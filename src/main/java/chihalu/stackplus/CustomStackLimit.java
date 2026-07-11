@@ -1,5 +1,7 @@
 package chihalu.stackplus;
 
+import chihalu.stackplus.network.StackRulesNetworking;
+
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +16,7 @@ public class CustomStackLimit implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		StackRulesNetworking.registerServer();
 		// このコードはMinecraftがMod読み込み準備完了状態になると直ちに実行されます。
 		// ただし、一部のもの（リソースなど）はまだ初期化されていない可能性があります。
 		// 注意深く進めてください。
