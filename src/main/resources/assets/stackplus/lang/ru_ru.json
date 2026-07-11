@@ -56,5 +56,8 @@
   "screen.stackplus.item_selection.selected_title": "Выбранный предмет",
   "screen.stackplus.item_selection.title": "Ограничения для предметов",
   "screen.stackplus.item_selection.value": "Щёлкните, чтобы задать %s / Shift+щёлчок для выбора нескольких",
+  "screen.stackplus.config.selected_item_count_position": "Положение количества предметов: %s",
+  "screen.stackplus.config.selected_item_count_position.beside": "Справа",
+  "screen.stackplus.config.selected_item_count_position.below": "Снизу",
   "tooltip.stackplus.count": "Количество: %s"
 }
