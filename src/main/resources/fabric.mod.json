@@ -8,12 +8,15 @@
 		"chihalu"
 	],
 	"contact": {
-		"sources": "https://github.com/ChihaluCoding/CustomStackLimit?tab=readme-ov-file"
+		"sources": "https://github.com/ChihaluCoding/stackplus"
 	},
 	"license": "MIT",
 	"icon": "assets/stackplus/icon.png",
-	"environment": "client",
+	"environment": "*",
 	"entrypoints": {
+		"main": [
+			"chihalu.customstacklimit.CustomStackLimit"
+		],
 		"client": [
 			"chihalu.customstacklimit.CustomStackLimitClient"
 		],
