@@ -56,5 +56,8 @@
   "screen.stackplus.item_selection.selected_title": "已選物品",
   "screen.stackplus.item_selection.title": "依物品設定",
   "screen.stackplus.item_selection.value": "點擊設為 %s / Shift 點擊可多選",
+  "screen.stackplus.config.selected_item_count_position": "物品數量位置：%s",
+  "screen.stackplus.config.selected_item_count_position.beside": "右側",
+  "screen.stackplus.config.selected_item_count_position.below": "下方",
   "tooltip.stackplus.count": "數量：%s"
 }
