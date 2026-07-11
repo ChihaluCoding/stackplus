@@ -16,7 +16,7 @@ public class ItemEntityMixin {
     @ModifyConstant(
             method = "merge(Lnet/minecraft/world/entity/item/ItemEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/ItemStack;)V",
             constant = @org.spongepowered.asm.mixin.injection.Constant(intValue = 64),
-            require = 0
+            require = 1
     )
     private static int stackplus$expandMergeLimit(int original) {
         return Integer.MAX_VALUE;

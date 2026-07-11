@@ -23,7 +23,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 public final class StackPlusIssueReportCommand {
     private static final String REPORT_DIRECTORY_NAME = "stackplus";
     private static final String REPORT_FILE_NAME = "stackplus-issue-report.txt";
-    private static final String REPORT_DISPLAY_PATH = "config/stackplus/stackplus-issue-report.txt";
+    private static final String REPORT_DISPLAY_PATH = REPORT_DIRECTORY_NAME + "/" + REPORT_FILE_NAME;
 
     private StackPlusIssueReportCommand() {
     }
@@ -55,11 +55,15 @@ public final class StackPlusIssueReportCommand {
     }
 
     private static Path writeIssueReport() throws IOException {
-        Path reportDirectory = FabricLoader.getInstance().getConfigDir().resolve(REPORT_DIRECTORY_NAME);
-        Files.createDirectories(reportDirectory);
-        Path reportPath = reportDirectory.resolve(REPORT_FILE_NAME);
+        Path reportPath = getReportPath(FabricLoader.getInstance().getGameDir());
+        Files.createDirectories(reportPath.getParent());
         Files.writeString(reportPath, buildIssueReportText(), StandardCharsets.UTF_8);
         return reportPath;
+    }
+
+    // Keep issue reports easy to find and separate from user configuration.
+    static Path getReportPath(Path gameDirectory) {
+        return gameDirectory.resolve(REPORT_DIRECTORY_NAME).resolve(REPORT_FILE_NAME);
     }
 
     private static String buildIssueReportText() {

@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class StackPlusUpdateNotifier {
     private static final String MODRINTH_VERSIONS_URL =
-            "https://api.modrinth.com/v2/project/stackplus/version?game_versions=[\"%s\"]&loaders=[\"fabric\"]";
+            "https://api.modrinth.com/v2/project/stackplus/version";
     private static final String MODRINTH_PAGE_URL = "https://modrinth.com/mod/stackplus";
     private static final String RELEASE_NOTE_URL = "https://chihalucoding.github.io/stackplus-release-note/";
     private static final AtomicBoolean checkStartedThisSession = new AtomicBoolean();
@@ -97,7 +97,10 @@ public final class StackPlusUpdateNotifier {
             }
 
             return Optional.of(new UpdateNotice(latestVersion));
-        } catch (IOException | IllegalStateException | InterruptedException exception) {
+        } catch (IOException | IllegalArgumentException | IllegalStateException | InterruptedException exception) {
+            if (exception instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
             CustomStackLimit.LOGGER.warn("StackPlus の更新通知データ取得に失敗しました", exception);
             return Optional.empty();
         }

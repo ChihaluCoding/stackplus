@@ -1,5 +1,7 @@
 package chihalu.stackplus.mixin;
 
+import chihalu.stackplus.StackLimitMath;
+
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.server.commands.GiveCommand;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,9 +21,6 @@ public class GiveCommandMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getMaxStackSize()I")
     )
     private static int stackplus$preventGiveOverflow(int maxStackSize) {
-        if (maxStackSize > Integer.MAX_VALUE / 100) {
-            return Integer.MAX_VALUE / 100;
-        }
-        return maxStackSize;
+        return StackLimitMath.safeGiveMaxStackSize(maxStackSize);
     }
 }

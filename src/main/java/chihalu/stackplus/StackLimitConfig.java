@@ -14,6 +14,8 @@ import net.minecraft.world.item.MinecartItem;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.NumberFormat;
@@ -63,6 +65,9 @@ public class StackLimitConfig {
     private static final Map<String, Integer> stackVariantLimits = new LinkedHashMap<>(LOADED_CONFIG.stackVariantLimits());
     private static final Set<String> forcedStackableItems = new LinkedHashSet<>(LOADED_CONFIG.forcedStackableItems());
     private static final Map<String, String> lastNotifiedReleaseVersions = new LinkedHashMap<>(LOADED_CONFIG.lastNotifiedReleaseVersions());
+    private static volatile boolean serverRulesActive;
+    private static volatile boolean remoteSession;
+    private static String localStackRules;
 
     public enum DisplayMode {
         COMPACT("compact"),
@@ -169,7 +174,84 @@ public class StackLimitConfig {
         return stackLimit;
     }
 
+    public static synchronized String exportStackRules() {
+        Properties properties = new Properties();
+        properties.setProperty(STACK_LIMIT_KEY, String.valueOf(stackLimit));
+        itemStackLimits.forEach((itemId, itemLimit) -> properties.setProperty(ITEM_LIMIT_KEY_PREFIX + itemId, String.valueOf(itemLimit)));
+        stackVariantLimits.forEach((key, limit) -> properties.setProperty(STACK_LIMIT_KEY_PREFIX + key, String.valueOf(limit)));
+        forcedStackableItems.forEach(itemId -> properties.setProperty(FORCED_ITEM_KEY_PREFIX + itemId, "true"));
+        StringWriter writer = new StringWriter();
+        try {
+            properties.store(writer, null);
+        } catch (IOException exception) {
+            throw new IllegalStateException("StackPlus rules could not be serialized", exception);
+        }
+        return writer.toString();
+    }
+
+    public static synchronized void applyServerStackRules(String serializedRules) {
+        if (!serverRulesActive) {
+            localStackRules = exportStackRules();
+        }
+        applyStackRules(serializedRules);
+        serverRulesActive = true;
+    }
+
+    public static synchronized void restoreLocalStackRules() {
+        if (!serverRulesActive) {
+            return;
+        }
+        applyStackRules(localStackRules);
+        localStackRules = null;
+        serverRulesActive = false;
+    }
+
+    public static boolean areServerRulesActive() {
+        return serverRulesActive;
+    }
+
+    public static void beginRemoteSession() {
+        remoteSession = true;
+    }
+
+    public static synchronized void endRemoteSession() {
+        remoteSession = false;
+        restoreLocalStackRules();
+    }
+
+    public static boolean areStackRulesEnabled() {
+        return !remoteSession || serverRulesActive;
+    }
+
+    private static void applyStackRules(String serializedRules) {
+        Properties properties = readStackRules(serializedRules);
+        try {
+            stackLimit = clampStackLimit(Integer.parseInt(properties.getProperty(STACK_LIMIT_KEY, String.valueOf(DEFAULT_STACK_LIMIT))));
+            itemStackLimits.clear();
+            itemStackLimits.putAll(loadItemStackLimits(properties));
+            stackVariantLimits.clear();
+            stackVariantLimits.putAll(loadStackVariantLimits(properties));
+            forcedStackableItems.clear();
+            forcedStackableItems.addAll(loadForcedStackableItems(properties));
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Invalid StackPlus server rules", exception);
+        }
+    }
+
+    private static Properties readStackRules(String serializedRules) {
+        Properties properties = new Properties();
+        try {
+            properties.load(new StringReader(serializedRules == null ? "" : serializedRules));
+            return properties;
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Invalid StackPlus server rules", exception);
+        }
+    }
+
     public static void setStackLimit(int value) {
+        if (serverRulesActive) {
+            return;
+        }
         stackLimit = clampStackLimit(value);
     }
 
@@ -275,16 +357,25 @@ public class StackLimitConfig {
     }
 
     public static void saveItemStackLimit(Item item, int value) {
+        if (serverRulesActive) {
+            return;
+        }
         applyItemStackLimit(item, clampStackLimit(value));
         saveConfig();
     }
 
     public static void saveItemStackLimit(ItemStack stack, int value) {
+        if (serverRulesActive) {
+            return;
+        }
         applyItemStackLimit(stack, clampStackLimit(value));
         saveConfig();
     }
 
     public static void saveItemStackLimits(Collection<Item> items, int value) {
+        if (serverRulesActive) {
+            return;
+        }
         int clampedValue = clampStackLimit(value);
         for (Item item : items) {
             applyItemStackLimit(item, clampedValue);
@@ -293,6 +384,9 @@ public class StackLimitConfig {
     }
 
     public static void saveStackVariantLimits(Collection<ItemStack> stacks, int value) {
+        if (serverRulesActive) {
+            return;
+        }
         int clampedValue = clampStackLimit(value);
         for (ItemStack stack : stacks) {
             applyItemStackLimit(stack, clampedValue);
@@ -301,6 +395,9 @@ public class StackLimitConfig {
     }
 
     public static void removeItemStackLimit(Item item) {
+        if (serverRulesActive) {
+            return;
+        }
         String itemId = getItemId(item);
         itemStackLimits.remove(itemId);
         removeStackVariantLimits(itemId);
@@ -309,6 +406,9 @@ public class StackLimitConfig {
     }
 
     public static void removeItemStackLimit(ItemStack stack) {
+        if (serverRulesActive) {
+            return;
+        }
         String stackVariantKey = getStackVariantKey(stack);
         if (stackVariantKey == null) {
             removeItemStackLimit(stack.getItem());
@@ -320,6 +420,9 @@ public class StackLimitConfig {
     }
 
     public static void removeItemStackLimits(Collection<Item> items) {
+        if (serverRulesActive) {
+            return;
+        }
         for (Item item : items) {
             String itemId = getItemId(item);
             itemStackLimits.remove(itemId);
@@ -330,6 +433,9 @@ public class StackLimitConfig {
     }
 
     public static void removeStackVariantLimits(Collection<ItemStack> stacks) {
+        if (serverRulesActive) {
+            return;
+        }
         for (ItemStack stack : stacks) {
             String stackVariantKey = getStackVariantKey(stack);
             if (stackVariantKey == null) {
@@ -380,6 +486,9 @@ public class StackLimitConfig {
     }
 
     public static int getAdjustedStackLimit(int originalLimit) {
+        if (!areStackRulesEnabled()) {
+            return originalLimit;
+        }
         if (originalLimit <= 1) {
             return originalLimit;
         }
@@ -388,6 +497,9 @@ public class StackLimitConfig {
     }
 
     public static int getAdjustedStackLimit(Item item, int originalLimit) {
+        if (!areStackRulesEnabled()) {
+            return originalLimit;
+        }
         if (!canApplyConfiguredStackLimit(item, originalLimit)) {
             return originalLimit;
         }
@@ -415,7 +527,8 @@ public class StackLimitConfig {
 
     public static int getAdjustedStackLimit(ItemStack stack, int originalLimit) {
         int adjustedLimit = getSafeStackCountLimit(stack, originalLimit);
-        return Math.max(adjustedLimit, stack.getCount());
+        return StackLimitMath.effectiveStackLimit(
+                areStackRulesEnabled(), originalLimit, adjustedLimit, stack.getCount());
     }
 
     public static int getSafeStackCountLimit(ItemStack stack) {
@@ -423,6 +536,9 @@ public class StackLimitConfig {
     }
 
     public static int getSafeStackCountLimit(ItemStack stack, int originalLimit) {
+        if (!areStackRulesEnabled()) {
+            return originalLimit;
+        }
         if (stack.isEmpty() || stack.isDamageableItem()) {
             return originalLimit;
         }
@@ -461,16 +577,22 @@ public class StackLimitConfig {
 
     private static void saveConfig() {
         Properties properties = new Properties();
-        properties.setProperty(STACK_LIMIT_KEY, String.valueOf(stackLimit));
+        Properties persistedStackRules = serverRulesActive ? readStackRules(localStackRules) : null;
+        properties.setProperty(STACK_LIMIT_KEY, persistedStackRules == null
+                ? String.valueOf(stackLimit)
+                : persistedStackRules.getProperty(STACK_LIMIT_KEY, String.valueOf(DEFAULT_STACK_LIMIT)));
         properties.setProperty(DISPLAY_MODE_KEY, displayMode.getSerializedName());
         properties.setProperty(SELECTED_ITEM_COUNT_MODE_KEY, selectedItemCountMode.getSerializedName());
         properties.setProperty(SELECTED_ITEM_COUNT_POSITION_KEY, selectedItemCountPosition.getSerializedName());
         properties.setProperty(UPDATE_NOTIFICATIONS_ENABLED_KEY, String.valueOf(updateNotificationsEnabled));
         properties.setProperty(STACK_LIMIT_PRESETS_VISIBLE_KEY, String.valueOf(stackLimitPresetsVisible));
         properties.setProperty(CUSTOM_STACK_LIMIT_PRESETS_KEY, serializeCustomStackLimitPresets());
-        itemStackLimits.forEach((itemId, itemLimit) -> properties.setProperty(ITEM_LIMIT_KEY_PREFIX + itemId, String.valueOf(itemLimit)));
-        stackVariantLimits.forEach((stackVariantKey, stackVariantLimit) -> properties.setProperty(STACK_LIMIT_KEY_PREFIX + stackVariantKey, String.valueOf(stackVariantLimit)));
-        forcedStackableItems.forEach(itemId -> properties.setProperty(FORCED_ITEM_KEY_PREFIX + itemId, "true"));
+        Map<String, Integer> persistedItemLimits = persistedStackRules == null ? itemStackLimits : loadItemStackLimits(persistedStackRules);
+        Map<String, Integer> persistedVariantLimits = persistedStackRules == null ? stackVariantLimits : loadStackVariantLimits(persistedStackRules);
+        Set<String> persistedForcedItems = persistedStackRules == null ? forcedStackableItems : loadForcedStackableItems(persistedStackRules);
+        persistedItemLimits.forEach((itemId, itemLimit) -> properties.setProperty(ITEM_LIMIT_KEY_PREFIX + itemId, String.valueOf(itemLimit)));
+        persistedVariantLimits.forEach((stackVariantKey, stackVariantLimit) -> properties.setProperty(STACK_LIMIT_KEY_PREFIX + stackVariantKey, String.valueOf(stackVariantLimit)));
+        persistedForcedItems.forEach(itemId -> properties.setProperty(FORCED_ITEM_KEY_PREFIX + itemId, "true"));
         lastNotifiedReleaseVersions.forEach((gameVersion, releaseVersion) ->
                 properties.setProperty(LAST_NOTIFIED_RELEASE_KEY_PREFIX + gameVersion, releaseVersion));
 

@@ -1,5 +1,7 @@
 package chihalu.stackplus;
 
+import chihalu.stackplus.network.StackRulesNetworking;
+
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,5 +16,6 @@ public class CustomStackLimit implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		StackRulesNetworking.registerServer();
 	}
 }

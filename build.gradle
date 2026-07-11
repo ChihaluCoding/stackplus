@@ -54,6 +54,21 @@ tasks.withType(JavaCompile).configureEach {
 	it.options.release = 21
 }
 
+tasks.register("unitTest", JavaExec) {
+	group = "verification"
+	description = "Runs StackPlus unit tests without Loom's game test classloader."
+	dependsOn testClasses
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = "chihalu.stackplus.StackLimitMathTest"
+}
+
+test {
+	enabled = false
+	dependsOn unitTest
+}
+
+check.dependsOn unitTest
+
 java {
 	withSourcesJar()
 
