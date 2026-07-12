@@ -3,11 +3,13 @@
 	"id": "stackplus",
 	"version": "${version}",
 	"name": "StackPlus",
-	"description": "You can set the stack size to a maximum of 1,000,000,000, but items with durability cannot be stacked.",
+	"description": "The stack size can be set to a maximum of 1,000,000,000.",
 	"authors": [
 		"chihalu"
 	],
 	"contact": {
+		"homepage": "https://chihalucoding.github.io/stackplus-release-note/",
+		"issues": "https://github.com/ChihaluCoding/stackplus/issues",
 		"sources": "https://github.com/ChihaluCoding/stackplus"
 	},
 	"license": "MIT",
@@ -15,22 +17,22 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"chihalu.customstacklimit.CustomStackLimit"
+			"chihalu.stackplus.StackPlus"
 		],
 		"client": [
-			"chihalu.customstacklimit.CustomStackLimitClient"
+			"chihalu.stackplus.StackPlusClient"
 		],
 		"modmenu": [
-			"chihalu.customstacklimit.modmenu.StackPlusModMenuIntegration"
+			"chihalu.stackplus.modmenu.StackPlusModMenuIntegration"
 		],
 		"fabric-datagen": [
-			"chihalu.customstacklimit.CustomStackLimitDataGenerator"
+			"chihalu.stackplus.StackPlusDataGenerator"
 		]
 	},
 	"mixins": [
-		"customstacklimit.mixins.json",
+		"stackplus.mixins.json",
 		{
-			"config": "customstacklimit.client.mixins.json",
+			"config": "stackplus.client.mixins.json",
 			"environment": "client"
 		}
 	],
@@ -38,9 +40,7 @@
 		"fabricloader": ">=0.19.3",
 		"minecraft": ">=26.2 <26.3",
 		"java": ">=25",
-		"fabric-api": "*"
-	},
-	"suggests": {
+		"fabric-api": "*",
 		"modmenu": "*"
 	}
 }

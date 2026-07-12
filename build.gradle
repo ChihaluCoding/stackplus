@@ -68,7 +68,7 @@ tasks.register("unitTest", JavaExec) {
 	description = "Runs StackPlus unit tests without Loom's game test classloader."
 	dependsOn testClasses
 	classpath = sourceSets.test.runtimeClasspath
-	mainClass = "chihalu.customstacklimit.StackLimitMathTest"
+	mainClass = "chihalu.stackplus.StackLimitMathTest"
 }
 
 test {
