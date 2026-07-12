@@ -1,0 +1,22 @@
+{
+	"required": true,
+	"package": "chihalu.stackplus.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"mixins": [
+		"BundleItemMixin",
+		"ContainerMixin",
+		"GiveCommandMixin",
+		"ItemEntityMixin",
+		"ItemScattererMixin",
+		"ItemMixin",
+		"ItemStackMixin",
+		"ItemStackStackableMixin",
+		"SlotMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}
