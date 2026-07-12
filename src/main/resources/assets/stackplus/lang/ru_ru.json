@@ -1,4 +1,4 @@
-﻿{
+{
   "button.stackplus.back": "Назад",
   "button.stackplus.add_preset": "Добавить",
   "button.stackplus.cancel": "Отмена",
@@ -56,8 +56,29 @@
   "screen.stackplus.item_selection.selected_title": "Выбранный предмет",
   "screen.stackplus.item_selection.title": "Ограничения для предметов",
   "screen.stackplus.item_selection.value": "Щёлкните, чтобы задать %s / Shift+щёлчок для выбора нескольких",
-  "screen.stackplus.config.selected_item_count_position": "Положение количества предметов: %s",
+  "screen.stackplus.config.selected_item_count_color": "Цвет количества предметов: %s",
+  "screen.stackplus.config.selected_item_count_color.white": "Белый",
+  "screen.stackplus.config.selected_item_count_color.yellow": "Жёлтый",
+  "screen.stackplus.config.selected_item_count_color.aqua": "Бирюзовый",
+  "screen.stackplus.config.selected_item_count_color.green": "Зелёный",
+  "screen.stackplus.config.selected_item_count_color.light_purple": "Светло-фиолетовый",
+  "screen.stackplus.item_selection.configured_only": "Только настроенные: %s",
+  "screen.stackplus.item_selection.configured_only.on": "Вкл.",
+  "screen.stackplus.item_selection.configured_only.off": "Выкл.",
+  "screen.stackplus.item_selection.stacking_forbidden": "Складывание: %s",
+  "screen.stackplus.item_selection.stacking_forbidden.on": "Запрещено",
+  "screen.stackplus.item_selection.stacking_forbidden.off": "Разрешено",
+  "screen.stackplus.color_picker.title": "Выбор цвета количества предметов",
+  "screen.stackplus.color_picker.hint": "Нажмите на цвет в круге",
+  "screen.stackplus.item_selection.sort.creative": "Творческий",
+  "tooltip.stackplus.count": "Количество: %s",
+  "tooltip.stackplus.count.compact": "Количество: %s (%s)",
+  "screen.stackplus.config.selected_item_count_position": "Положение количества: %s",
   "screen.stackplus.config.selected_item_count_position.beside": "Справа",
   "screen.stackplus.config.selected_item_count_position.below": "Снизу",
-  "tooltip.stackplus.count": "Количество: %s"
+  "screen.stackplus.item_selection.world_required": "Предметы будут отображаться после первого входа в мир",
+  "screen.stackplus.durability_warning.title": "Предупреждение о прочности предметов",
+  "screen.stackplus.durability_warning.line1": "Прочность всех предметов в стопке уменьшится.",
+  "screen.stackplus.durability_warning.line2": "Включайте это только если понимаете такое поведение.",
+  "screen.stackplus.durability_warning.suppress": "Больше не показывать"
 }

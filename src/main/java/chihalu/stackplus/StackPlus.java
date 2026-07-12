@@ -6,7 +6,7 @@ import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CustomStackLimit implements ModInitializer {
+public class StackPlus implements ModInitializer {
 	public static final String MOD_ID = "stackplus";
 
 	// このロガーはコンソールとログファイルにテキストを書き込むために使用されます。
@@ -21,7 +21,7 @@ public class CustomStackLimit implements ModInitializer {
 		// ただし、一部のもの（リソースなど）はまだ初期化されていない可能性があります。
 		// 注意深く進めてください。
 
-		LOGGER.info("CustomStackLimit Mod が初期化されました！");
-		LOGGER.info("CustomStackLimit: 通常アイテムのスタック数が{}個に設定されました", StackLimitConfig.getStackLimit());
+		LOGGER.info("StackPlus Mod が初期化されました！");
+		LOGGER.info("StackPlus: 通常アイテムのスタック数が{}個に設定されました", StackLimitConfig.getStackLimit());
 	}
 }
