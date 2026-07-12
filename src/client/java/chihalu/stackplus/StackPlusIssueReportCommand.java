@@ -45,10 +45,10 @@ public final class StackPlusIssueReportCommand {
             sendYellowMessage(source, Component.literal(REPORT_DISPLAY_PATH));
             sendYellowMessage(source, "");
             sendYellowMessage(source, Component.translatable("chat.stackplus.issue_report.attach"));
-            CustomStackLimit.LOGGER.info("StackPlus issue report exported: {}", reportPath);
+            StackPlus.LOGGER.info("StackPlus issue report exported: {}", reportPath);
             return 1;
         } catch (IOException exception) {
-            CustomStackLimit.LOGGER.warn("StackPlus issue report の出力に失敗しました", exception);
+            StackPlus.LOGGER.warn("StackPlus issue report の出力に失敗しました", exception);
             sendYellowMessage(source, Component.translatable("chat.stackplus.issue_report.failed"));
             return 0;
         }

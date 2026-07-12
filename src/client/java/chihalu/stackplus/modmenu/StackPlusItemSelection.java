@@ -35,7 +35,10 @@ public final class StackPlusItemSelection {
 
     public static void start(Screen parent, int itemStackLimit) {
         Minecraft client = Minecraft.getInstance();
-        client.setScreen(new ItemSelectionScreen(parent, itemStackLimit));
+        if (client.level == null && StackLimitConfig.areServerRulesActive()) {
+            StackLimitConfig.endRemoteSession();
+        }
+        client.setScreenAndShow(new ItemSelectionScreen(parent, itemStackLimit));
     }
 
     private StackPlusItemSelection() {
@@ -43,9 +46,6 @@ public final class StackPlusItemSelection {
 
     private static final class ItemSelectionScreen extends Screen {
         private static final int SLOT_SIZE = 18;
-        private static final int SLOT_GAP = 2;
-        private static final int SLOT_PITCH = SLOT_SIZE + SLOT_GAP;
-        private static final int MAX_GRID_COLUMNS = 16;
         private static final int ITEM_OFFSET = 1;
         private static final int PANEL_MARGIN = 18;
         private static final int GRID_PADDING = 10;
@@ -53,28 +53,37 @@ public final class StackPlusItemSelection {
         private static final int PANEL_GAP = 12;
         private static final int SEARCH_HEIGHT = 20;
         private static final int SORT_BUTTON_WIDTH = 56;
+        private static final int CONFIGURED_FILTER_BUTTON_WIDTH = 86;
         private static final int SEARCH_SORT_GAP = 6;
         private static final int HEADER_HEIGHT = 54;
         private static final int FOOTER_HEIGHT = 14;
         private static final int BUTTON_HEIGHT = 20;
-        private static final int PANEL_COLOR = 0x58000000;
+        private static final int PANEL_COLOR = 0x80000000;
         private static final int PANEL_BORDER_COLOR = 0xFFFFFFFF;
         private static final int SLOT_HOVER_COLOR = 0x66FFFFFF;
         private static final int SLOT_SELECTED_COLOR = 0x8800A8FF;
-        private static final int SLOT_BACKGROUND_COLOR = 0x30000000;
         private static final long SELECTED_ITEM_DISPLAY_INTERVAL_MS = 3_000L;
         private static final int[] LIMIT_PRESETS = {64, 999, 1_000, 10_000, 32_767, 1_000_000};
 
         private final Screen parent;
         private final int initialStackLimit;
         private final boolean stackLimitPresetsVisible;
+        private final boolean requiresWorldOrder;
         private final List<Entry> allItems;
         private final List<Entry> filteredItems = new ArrayList<>();
         private final Set<Entry> selectedEntries = new LinkedHashSet<>();
+        private final Map<Entry, Integer> pendingLimits = new LinkedHashMap<>();
+        private final Set<Entry> pendingAllowedEntries = new LinkedHashSet<>();
+        private final Set<Entry> pendingForbiddenEntries = new LinkedHashSet<>();
         private EditBox searchBox;
         private EditBox limitInput;
+        private Button stackingForbiddenButton;
+        private Button previousSelectedButton;
+        private Button nextSelectedButton;
+        private Entry activeEntry;
         private SortMode sortMode = SortMode.CREATIVE;
         private String searchText = "";
+        private boolean configuredOnly;
         private int pendingLimit;
         private int scrollRows;
         private boolean updatingLimitInput;
@@ -85,16 +94,19 @@ public final class StackPlusItemSelection {
             this.initialStackLimit = StackLimitConfig.clampStackLimit(itemStackLimit);
             this.stackLimitPresetsVisible = StackLimitConfig.areStackLimitPresetsVisible();
             this.pendingLimit = this.initialStackLimit;
+            this.requiresWorldOrder = Minecraft.getInstance().level == null
+                    && StackPlusCreativeOrderCache.load().isEmpty();
             this.allItems = createEntries();
             filterItems();
         }
 
         @Override
         protected void init() {
-            int gridLeft = getGridLeft();
-            int gridWidth = getGridWidth();
-            int searchWidth = gridWidth - SORT_BUTTON_WIDTH - SEARCH_SORT_GAP;
-            this.searchBox = new EditBox(this.font, gridLeft, 28, searchWidth, SEARCH_HEIGHT,
+            int rightLeft = getRightLeft();
+            int rightWidth = getRightWidth();
+            int searchLeft = rightLeft + GRID_PADDING;
+            int searchWidth = rightWidth - GRID_PADDING * 2 - SORT_BUTTON_WIDTH - CONFIGURED_FILTER_BUTTON_WIDTH - SEARCH_SORT_GAP * 2;
+            this.searchBox = new EditBox(this.font, searchLeft, 28, searchWidth, SEARCH_HEIGHT,
                     Component.translatable("screen.stackplus.item_selection.search"));
             this.searchBox.setMaxLength(80);
             this.searchBox.setValue(searchText);
@@ -111,18 +123,40 @@ public final class StackPlusItemSelection {
                 button.setMessage(Component.literal(sortMode.label()));
                 scrollRows = 0;
                 filterItems();
-            }).bounds(gridLeft + searchWidth + SEARCH_SORT_GAP, 28, SORT_BUTTON_WIDTH, SEARCH_HEIGHT).build());
+            }).bounds(searchLeft + searchWidth + SEARCH_SORT_GAP, 28, SORT_BUTTON_WIDTH, SEARCH_HEIGHT).build());
+            addRenderableWidget(Button.builder(configuredOnlyText(), button -> {
+                configuredOnly = !configuredOnly;
+                button.setMessage(configuredOnlyText());
+                scrollRows = 0;
+                filterItems();
+            }).bounds(searchLeft + searchWidth + SEARCH_SORT_GAP + SORT_BUTTON_WIDTH + SEARCH_SORT_GAP, 28,
+                    CONFIGURED_FILTER_BUTTON_WIDTH, SEARCH_HEIGHT).build());
 
             int left = getLeftPanelLeft() + GRID_PADDING;
             int contentWidth = getLeftPanelWidth() - GRID_PADDING * 2;
-            this.limitInput = new EditBox(this.font, left, 118, contentWidth, 20,
+            this.stackingForbiddenButton = Button.builder(stackingForbiddenText(false), button -> toggleStackingForbidden())
+                    .bounds(left, 104, contentWidth, BUTTON_HEIGHT)
+                    .build();
+            this.stackingForbiddenButton.active = false;
+            addRenderableWidget(this.stackingForbiddenButton);
+
+            this.previousSelectedButton = Button.builder(Component.literal("<"), button -> cycleActiveEntry(-1))
+                    .bounds(left, 48, 20, BUTTON_HEIGHT)
+                    .build();
+            this.nextSelectedButton = Button.builder(Component.literal(">"), button -> cycleActiveEntry(1))
+                    .bounds(left + contentWidth - 20, 48, 20, BUTTON_HEIGHT)
+                    .build();
+            addRenderableWidget(this.previousSelectedButton);
+            addRenderableWidget(this.nextSelectedButton);
+
+            this.limitInput = new EditBox(this.font, left, 142, contentWidth, 20,
                     Component.translatable("screen.stackplus.item_selection.limit_input"));
             this.limitInput.setMaxLength(14);
             this.limitInput.setResponder(this::onLimitInputChanged);
             addRenderableWidget(limitInput);
 
             if (stackLimitPresetsVisible) {
-                addPresetButtons(left, 142);
+                addPresetButtons(left, 166);
             }
             int backButtonY = this.height - 42;
             int halfWidth = (contentWidth - 6) / 2;
@@ -138,10 +172,16 @@ public final class StackPlusItemSelection {
 
             setLimitInputText(pendingLimit);
             setInitialFocus(searchBox);
+            updateStackingForbiddenButton();
         }
 
         @Override
+        public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            super.renderBackground(graphics, mouseX, mouseY, partialTick);
+        }
+        @Override
         public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            renderPanels(graphics);
             super.render(graphics, mouseX, mouseY, partialTick);
             renderSelectedItem(graphics);
             renderItems(graphics, mouseX, mouseY);
@@ -176,39 +216,25 @@ public final class StackPlusItemSelection {
             return true;
         }
 
+        private void drawCenteredText(GuiGraphics graphics, Component text, int centerX, int y, int color) {
+            graphics.drawString(this.font, text, centerX - this.font.width(text) / 2, y, color, false);
+        }
         @Override
         public void onClose() {
-            Minecraft.getInstance().setScreen(parent);
-        }
-
-        @Override
-        public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-            // 標準背景の後、ウィジェットより前にパネルを描き、後段背景による上書きを防ぐ。
-            renderStackPlusBackground(graphics, partialTick);
-            renderPanels(graphics);
-        }
-
-        private void renderStackPlusBackground(GuiGraphics graphics, float partialTick) {
-            if (this.minecraft.level == null) {
-                this.renderPanorama(graphics, partialTick);
-            }
-            this.renderBlurredBackground(graphics);
-            this.renderTransparentBackground(graphics);
+            Minecraft.getInstance().setScreenAndShow(parent);
         }
 
         private void renderPanels(GuiGraphics graphics) {
             graphics.fill(getLeftPanelLeft(), 6, getLeftPanelRight(), this.height - 6, PANEL_COLOR);
-            graphics.fill(getLeftPanelLeft(), 6, getLeftPanelLeft() + getLeftPanelWidth(), 7, PANEL_BORDER_COLOR);
-        graphics.fill(getLeftPanelLeft(), this.height - 7, getLeftPanelLeft() + getLeftPanelWidth(), this.height - 6, PANEL_BORDER_COLOR);
-        graphics.fill(getLeftPanelLeft(), 6, getLeftPanelLeft() + 1, this.height - 6, PANEL_BORDER_COLOR);
-        graphics.fill(getLeftPanelLeft() + getLeftPanelWidth() - 1, 6, getLeftPanelLeft() + getLeftPanelWidth(), this.height - 6, PANEL_BORDER_COLOR);
+            graphics.renderOutline(getLeftPanelLeft(), 6, getLeftPanelWidth(), this.height - 12, PANEL_BORDER_COLOR);
             graphics.fill(getRightLeft(), 6, getRightRight(), this.height - 6, PANEL_COLOR);
-            graphics.fill(getRightLeft(), 6, getRightLeft() + getRightWidth(), 7, PANEL_BORDER_COLOR);
-        graphics.fill(getRightLeft(), this.height - 7, getRightLeft() + getRightWidth(), this.height - 6, PANEL_BORDER_COLOR);
-        graphics.fill(getRightLeft(), 6, getRightLeft() + 1, this.height - 6, PANEL_BORDER_COLOR);
-        graphics.fill(getRightLeft() + getRightWidth() - 1, 6, getRightLeft() + getRightWidth(), this.height - 6, PANEL_BORDER_COLOR);
+            graphics.renderOutline(getRightLeft(), 6, getRightWidth(), this.height - 12, PANEL_BORDER_COLOR);
             drawCenteredText(graphics, Component.translatable("screen.stackplus.item_selection.selected_title"), getLeftPanelLeft() + getLeftPanelWidth() / 2, 18, 0xFFFFFFFF);
             drawCenteredText(graphics, this.title, getRightLeft() + getRightWidth() / 2, 10, 0xFFFFFFFF);
+            if (isCreativeOrderUnavailable()) {
+                drawCenteredText(graphics, Component.translatable("screen.stackplus.item_selection.world_required"),
+                        getRightLeft() + getRightWidth() / 2, this.height / 2 - 5, 0xFFFFFFFF);
+            }
         }
 
         private void renderSelectedItem(GuiGraphics graphics) {
@@ -222,25 +248,12 @@ public final class StackPlusItemSelection {
             graphics.renderItem(displayedEntry.stack(), centerX - 8, 48);
             drawCenteredText(graphics, displayedEntry.stack().getDisplayName(), centerX, 72, 0xFFFFFFFF);
             drawCenteredText(graphics, Component.literal(displayedEntry.id()), centerX, 88, 0xFFB8B8B8);
-            graphics.drawString(this.font, Component.translatable("screen.stackplus.item_selection.limit_label"), getLeftPanelLeft() + GRID_PADDING, 104, 0xFFE0E0E0, false);
-        }
-
-        private void drawCenteredText(GuiGraphics graphics, Component text, int centerX, int y, int color) {
-            graphics.drawString(this.font, text, centerX - this.font.width(text) / 2, y, color, false);
+            graphics.drawString(this.font, Component.translatable("screen.stackplus.item_selection.limit_label"), getLeftPanelLeft() + GRID_PADDING, 128, 0xFFE0E0E0, false);
         }
 
         private Entry getDisplayedSelectedEntry() {
-            if (selectedEntries.size() <= 1) {
-                return selectedEntries.iterator().next();
-            }
-
-            int displayIndex = (int) ((System.currentTimeMillis() / SELECTED_ITEM_DISPLAY_INTERVAL_MS) % selectedEntries.size());
-            int index = 0;
-            for (Entry entry : selectedEntries) {
-                if (index == displayIndex) {
-                    return entry;
-                }
-                index++;
+            if (activeEntry != null && selectedEntries.contains(activeEntry)) {
+                return activeEntry;
             }
             return selectedEntries.iterator().next();
         }
@@ -257,11 +270,10 @@ public final class StackPlusItemSelection {
                 int visibleIndex = index - startIndex;
                 int column = visibleIndex % columns;
                 int row = visibleIndex / columns;
-                int x = gridLeft + column * SLOT_PITCH;
-                int y = gridTop + row * SLOT_PITCH;
+                int x = gridLeft + column * SLOT_SIZE;
+                int y = gridTop + row * SLOT_SIZE;
                 Entry entry = filteredItems.get(index);
 
-                graphics.fill(x, y, x + SLOT_SIZE, y + SLOT_SIZE, SLOT_BACKGROUND_COLOR);
                 if (selectedEntries.contains(entry)) {
                     graphics.fill(x, y, x + SLOT_SIZE, y + SLOT_SIZE, SLOT_SELECTED_COLOR);
                 } else if (isMouseInSlot(mouseX, mouseY, x, y)) {
@@ -287,13 +299,29 @@ public final class StackPlusItemSelection {
         }
 
         private void selectEntry(Entry entry) {
+            if (!hasShiftDown() && selectedEntries.size() > 1 && selectedEntries.contains(entry)) {
+                activeEntry = entry;
+                setPendingLimit(getPendingLimit(entry), true);
+                updateStackingForbiddenButton();
+                return;
+            }
             if (hasShiftDown()) {
                 toggleSelectedEntry(entry);
             } else {
                 selectedEntries.clear();
+                pendingLimits.clear();
+                pendingAllowedEntries.clear();
+                pendingForbiddenEntries.clear();
                 selectedEntries.add(entry);
             }
-            setPendingLimit(StackLimitConfig.getAdjustedStackLimit(entry.stack(), initialStackLimit), true);
+            if (!selectedEntries.contains(entry)) {
+                activeEntry = selectedEntries.isEmpty() ? null : selectedEntries.iterator().next();
+                updateStackingForbiddenButton();
+                return;
+            }
+            activeEntry = entry;
+            setPendingLimit(getPendingLimit(entry), true);
+            updateStackingForbiddenButton();
         }
 
         private void toggleSelectedEntry(Entry entry) {
@@ -308,7 +336,67 @@ public final class StackPlusItemSelection {
             }
 
             syncPendingLimitFromInput();
-            StackLimitConfig.saveStackVariantLimits(selectedEntries.stream().map(Entry::stack).toList(), pendingLimit);
+            if (selectedEntries.stream().anyMatch(entry -> getPendingLimit(entry) > 1 && isPotentiallyDamageable(entry))
+                    && !StackLimitConfig.isDurabilityWarningSuppressed()) {
+                StackPlusDurabilityWarningScreen.open(this, this::saveSelectedItemNow);
+                return;
+            }
+            saveSelectedItemNow();
+        }
+
+        private static boolean isPotentiallyDamageable(Entry entry) {
+            if (entry.stack().isDamageableItem()) {
+                return true;
+            }
+            String id = entry.id();
+            return id.contains("sword") || id.contains("pickaxe") || id.contains("axe")
+                    || id.contains("shovel") || id.contains("hoe") || id.contains("bow")
+                    || id.contains("crossbow") || id.contains("trident") || id.contains("mace")
+                    || id.contains("shears") || id.contains("fishing_rod") || id.contains("flint_and_steel")
+                    || id.contains("brush") || id.contains("helmet") || id.contains("chestplate")
+                    || id.contains("leggings") || id.contains("boots") || id.contains("elytra");
+        }
+
+        private void saveSelectedItemNow() {
+            selectedEntries.forEach(entry -> {
+                int limit = getPendingLimit(entry);
+                boolean forbidden = isStackingForbidden(entry);
+                if (forbidden) {
+                    if (isPotentiallyDamageable(entry)
+                            && limit == StackLimitConfig.getDefaultStackLimit(entry.stack(), initialStackLimit)) {
+                        StackLimitConfig.removeItemStackLimit(entry.item());
+                    } else {
+                        StackLimitConfig.setItemStackingForbidden(entry.item(), true);
+                    }
+                } else {
+                    StackLimitConfig.setItemStackingForbidden(entry.item(), false);
+                    if (isPotentiallyDamageable(entry)) {
+                        StackLimitConfig.saveItemStackLimit(entry.item(), limit);
+                    } else if (limit == StackLimitConfig.getDefaultStackLimit(entry.stack(), initialStackLimit)) {
+                        StackLimitConfig.removeItemStackLimit(entry.item());
+                    } else {
+                        StackLimitConfig.saveStackVariantLimits(List.of(entry.stack()), limit);
+                    }
+                }
+            });
+            pendingLimits.clear();
+            pendingAllowedEntries.removeAll(selectedEntries);
+            pendingForbiddenEntries.removeAll(selectedEntries);
+            if (configuredOnly) {
+                selectedEntries.removeIf(entry -> !isConfiguredForFilter(entry));
+                if (activeEntry == null || !selectedEntries.contains(activeEntry)) {
+                    activeEntry = selectedEntries.stream().findFirst().orElse(null);
+                }
+                if (activeEntry == null) {
+                    updatingLimitInput = true;
+                    limitInput.setValue("");
+                    updatingLimitInput = false;
+                } else {
+                    setPendingLimit(getPendingLimit(activeEntry), true);
+                }
+                filterItems();
+            }
+            updateStackingForbiddenButton();
         }
 
         private void resetSelectedItem() {
@@ -316,12 +404,91 @@ public final class StackPlusItemSelection {
                 return;
             }
 
-            StackLimitConfig.removeStackVariantLimits(selectedEntries.stream().map(Entry::stack).toList());
+            StackLimitConfig.removeItemStackLimits(selectedEntries.stream().map(Entry::item).toList());
+            pendingLimits.clear();
+            pendingAllowedEntries.removeAll(selectedEntries);
+            pendingForbiddenEntries.removeAll(selectedEntries);
+            if (configuredOnly) {
+                selectedEntries.clear();
+                activeEntry = null;
+                updatingLimitInput = true;
+                limitInput.setValue("");
+                updatingLimitInput = false;
+                updateStackingForbiddenButton();
+                filterItems();
+                return;
+            }
             setPendingLimit(getResetStackLimit(getDisplayedSelectedEntry()), true);
+            updateStackingForbiddenButton();
+        }
+
+        private void toggleStackingForbidden() {
+            if (selectedEntries.isEmpty()) {
+                return;
+            }
+            boolean forbid = selectedEntries.stream().anyMatch(entry -> !isStackingForbidden(entry));
+            if (forbid) {
+                pendingAllowedEntries.removeAll(selectedEntries);
+                pendingForbiddenEntries.addAll(selectedEntries);
+                selectedEntries.forEach(entry -> pendingLimits.put(entry, 1));
+                setPendingLimitForActiveEntry(1);
+            } else {
+                pendingForbiddenEntries.removeAll(selectedEntries);
+                pendingAllowedEntries.addAll(selectedEntries);
+                selectedEntries.forEach(entry -> pendingLimits.put(entry, Math.max(initialStackLimit, 2)));
+                setPendingLimitForActiveEntry(Math.max(initialStackLimit, 2));
+            }
+            updateStackingForbiddenButton();
+        }
+
+        private void updateStackingForbiddenButton() {
+            if (stackingForbiddenButton == null) {
+                return;
+            }
+            boolean forbidden = !selectedEntries.isEmpty()
+                    && selectedEntries.stream().allMatch(this::isStackingForbidden);
+            stackingForbiddenButton.active = !selectedEntries.isEmpty();
+            stackingForbiddenButton.setMessage(stackingForbiddenText(forbidden));
+            if (limitInput != null) {
+                limitInput.active = !selectedEntries.isEmpty() && !forbidden;
+            }
+            boolean canCycle = selectedEntries.size() > 1;
+            if (previousSelectedButton != null) {
+                previousSelectedButton.active = canCycle;
+            }
+            if (nextSelectedButton != null) {
+                nextSelectedButton.active = canCycle;
+            }
+        }
+
+        private boolean isStackingForbidden(Entry entry) {
+            if (pendingForbiddenEntries.contains(entry)) {
+                return true;
+            }
+            if (pendingAllowedEntries.contains(entry)) {
+                return false;
+            }
+            if (isPotentiallyDamageable(entry)
+                    && !StackLimitConfig.hasConfiguredStackLimit(entry.stack())
+                    ) {
+                return true;
+            }
+            return StackLimitConfig.isItemStackingForbidden(entry.item());
+        }
+
+        private int getPendingLimit(Entry entry) {
+            Integer pending = pendingLimits.get(entry);
+            if (pending != null) {
+                return pending;
+            }
+            if (isStackingForbidden(entry)) {
+                return 1;
+            }
+            return StackLimitConfig.getAdjustedStackLimit(entry.stack(), initialStackLimit);
         }
 
         private int getResetStackLimit(Entry entry) {
-            return StackLimitConfig.getSafeStackCountLimit(entry.stack(), initialStackLimit);
+            return StackLimitConfig.getDefaultStackLimit(entry.stack(), initialStackLimit);
         }
 
         private boolean hasShiftDown() {
@@ -351,11 +518,30 @@ public final class StackPlusItemSelection {
             setPendingLimit(parsedValue, true);
         }
 
+        private void cycleActiveEntry(int direction) {
+            if (selectedEntries.isEmpty()) {
+                return;
+            }
+            syncPendingLimitFromInput();
+            List<Entry> entries = new ArrayList<>(selectedEntries);
+            int currentIndex = activeEntry == null ? -1 : entries.indexOf(activeEntry);
+            activeEntry = entries.get((currentIndex + direction + entries.size()) % entries.size());
+            setPendingLimit(getPendingLimit(activeEntry), true);
+            updateStackingForbiddenButton();
+        }
+
         private void setPendingLimit(int value, boolean updateInput) {
             pendingLimit = StackLimitConfig.clampStackLimit(value);
+            if (activeEntry != null && selectedEntries.contains(activeEntry)) {
+                pendingLimits.put(activeEntry, pendingLimit);
+            }
             if (updateInput && limitInput != null) {
                 setLimitInputText(pendingLimit);
             }
+        }
+
+        private void setPendingLimitForActiveEntry(int value) {
+            setPendingLimit(value, true);
         }
 
         private void setLimitInputText(int value) {
@@ -368,14 +554,14 @@ public final class StackPlusItemSelection {
             int columns = getColumns();
             int gridLeft = getGridLeft();
             int gridTop = getGridTop();
-            int column = (int) ((mouseX - gridLeft) / SLOT_PITCH);
-            int row = (int) ((mouseY - gridTop) / SLOT_PITCH);
+            int column = (int) ((mouseX - gridLeft) / SLOT_SIZE);
+            int row = (int) ((mouseY - gridTop) / SLOT_SIZE);
             if (column < 0 || column >= columns || row < 0 || row >= getVisibleRows()) {
                 return null;
             }
 
-            int slotX = gridLeft + column * SLOT_PITCH;
-            int slotY = gridTop + row * SLOT_PITCH;
+            int slotX = gridLeft + column * SLOT_SIZE;
+            int slotY = gridTop + row * SLOT_SIZE;
             if (!isMouseInSlot(mouseX, mouseY, slotX, slotY)) {
                 return null;
             }
@@ -390,21 +576,44 @@ public final class StackPlusItemSelection {
         private void filterItems() {
             String query = searchText.trim().toLowerCase(Locale.ROOT);
             filteredItems.clear();
+            if (isCreativeOrderUnavailable()) {
+                return;
+            }
             for (Entry entry : allItems) {
-                if (query.isEmpty() || entry.id().contains(query) || entry.name().contains(query)) {
+                if ((query.isEmpty() || entry.id().contains(query) || entry.name().contains(query))
+                        && (!configuredOnly || isConfiguredForFilter(entry))) {
                     filteredItems.add(entry);
                 }
             }
             filteredItems.sort(sortMode.comparator());
         }
 
+        private boolean isConfiguredForFilter(Entry entry) {
+            return StackLimitConfig.hasConfiguredStackLimit(entry.stack())
+                    && (!isPotentiallyDamageable(entry) || !isStackingForbidden(entry));
+        }
+
+        private boolean isCreativeOrderUnavailable() {
+            return requiresWorldOrder && sortMode == SortMode.CREATIVE;
+        }
+
+        private Component configuredOnlyText() {
+            return Component.translatable("screen.stackplus.item_selection.configured_only",
+                    Component.translatable(configuredOnly ? "screen.stackplus.item_selection.configured_only.on" : "screen.stackplus.item_selection.configured_only.off"));
+        }
+
+        private static Component stackingForbiddenText(boolean forbidden) {
+            return Component.translatable("screen.stackplus.item_selection.stacking_forbidden",
+                    Component.translatable(forbidden ? "screen.stackplus.item_selection.stacking_forbidden.on" : "screen.stackplus.item_selection.stacking_forbidden.off"));
+        }
+
         private void updateSearchHint() {
             if (searchBox == null) {
                 return;
             }
-            searchBox.setHint(searchText.isEmpty()
-                    ? Component.translatable("screen.stackplus.item_selection.search_hint")
-                    : Component.empty());
+            searchBox.setSuggestion(searchText.isEmpty()
+                    ? Component.translatable("screen.stackplus.item_selection.search_hint").getString()
+                    : "");
         }
 
         private int getLeftPanelLeft() {
@@ -432,11 +641,7 @@ public final class StackPlusItemSelection {
         }
 
         private int getGridLeft() {
-            return getRightLeft() + (getRightWidth() - getGridWidth()) / 2;
-        }
-
-        private int getGridWidth() {
-            return getColumns() * SLOT_PITCH - SLOT_GAP;
+            return getRightLeft() + GRID_PADDING;
         }
 
         private int getGridTop() {
@@ -444,12 +649,11 @@ public final class StackPlusItemSelection {
         }
 
         private int getColumns() {
-            int availableWidth = getRightWidth() - GRID_PADDING * 2;
-            return Math.max(1, Math.min(MAX_GRID_COLUMNS, (availableWidth + SLOT_GAP) / SLOT_PITCH));
+            return Math.max(1, (getRightWidth() - GRID_PADDING) / SLOT_SIZE);
         }
 
         private int getVisibleRows() {
-            return Math.max(1, (this.height - HEADER_HEIGHT - FOOTER_HEIGHT + SLOT_GAP) / SLOT_PITCH);
+            return Math.max(1, (this.height - HEADER_HEIGHT - FOOTER_HEIGHT) / SLOT_SIZE);
         }
 
         private int getTotalRows() {
@@ -544,14 +748,47 @@ public final class StackPlusItemSelection {
             BuiltInRegistries.ITEM.stream()
                     .forEach(item -> addRegistryEntry(entries, item));
 
-            return new ArrayList<>(entries.values());
+            List<Entry> result = new ArrayList<>(entries.values());
+            if (Minecraft.getInstance().level != null) {
+                StackPlusCreativeOrderCache.save(result.stream().map(Entry::key).toList());
+            } else {
+                result = applyCachedCreativeOrder(result);
+            }
+            return result;
+        }
+
+        private static List<Entry> applyCachedCreativeOrder(List<Entry> entries) {
+            List<String> cachedOrder = StackPlusCreativeOrderCache.load();
+            if (cachedOrder.isEmpty()) {
+                return entries;
+            }
+            Map<String, Entry> entriesByKey = new LinkedHashMap<>();
+            entries.forEach(entry -> entriesByKey.put(entry.key(), entry));
+            List<Entry> orderedEntries = new ArrayList<>();
+            for (String key : cachedOrder) {
+                Entry entry = entriesByKey.remove(key);
+                if (entry != null) {
+                    orderedEntries.add(entry);
+                }
+            }
+            orderedEntries.addAll(entriesByKey.values());
+            return orderedEntries;
         }
 
         private static void rebuildCreativeTabs() {
             try {
-                CreativeModeTabs.tryRebuildTabContents(FeatureFlags.DEFAULT_FLAGS, true, RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY));
+                RegistryAccess registryAccess = RegistryAccess.fromRegistryOfRegistries(BuiltInRegistries.REGISTRY);
+                CreativeModeTab.ItemDisplayParameters parameters = new CreativeModeTab.ItemDisplayParameters(
+                        FeatureFlags.DEFAULT_FLAGS, true, registryAccess);
+                for (CreativeModeTab tab : CreativeModeTabs.allTabs()) {
+                    try {
+                        tab.buildContents(parameters);
+                    } catch (RuntimeException exception) {
+                        // 一部のModアイテムがタイトル画面で未初期化でも、他のタブの順序は維持します。
+                    }
+                }
             } catch (RuntimeException exception) {
-                // Some title-screen paths still lack full registry context; fall back to safe entries below.
+                // タイトル画面でレジストリが未準備の場合はレジストリ順へフォールバックします。
             }
         }
 
@@ -567,7 +804,7 @@ public final class StackPlusItemSelection {
         private static void addRegistryEntry(Map<String, Entry> entries, Item item) {
             try {
                 Entry entry = Entry.fromItem(item);
-                if (entry.isConfigurable()) {
+                if (entry.isVisibleInSelection()) {
                     entries.putIfAbsent(entry.key(), entry);
                 }
             } catch (RuntimeException exception) {
@@ -578,7 +815,7 @@ public final class StackPlusItemSelection {
         private static void addEntries(Map<String, Entry> entries, Iterable<ItemStack> stacks) {
             for (ItemStack stack : stacks) {
                 Entry entry = new Entry(stack.copyWithCount(1));
-                if (entry.isConfigurable()) {
+                if (entry.isVisibleInSelection()) {
                     entries.putIfAbsent(entry.key(), entry);
                 }
             }
@@ -599,7 +836,7 @@ public final class StackPlusItemSelection {
 
             private String label() {
                 return switch (this) {
-                    case CREATIVE -> "Creative";
+                    case CREATIVE -> Component.translatable("screen.stackplus.item_selection.sort.creative").getString();
                     case ID_ASCENDING -> "ID ↑";
                     case ID_DESCENDING -> "ID ↓";
                     case NAME_ASCENDING -> "A-Z";
@@ -609,6 +846,7 @@ public final class StackPlusItemSelection {
 
             private Comparator<Entry> comparator() {
                 return switch (this) {
+                    // クリエイティブインベントリと同じ順番を維持します。
                     case CREATIVE -> (left, right) -> 0;
                     case ID_ASCENDING -> Comparator.comparing(Entry::id);
                     case ID_DESCENDING -> Comparator.comparing(Entry::id).reversed();
@@ -681,45 +919,9 @@ public final class StackPlusItemSelection {
                 }
             }
 
-            private boolean isConfigurable() {
-                return !stack.isEmpty() && !isDamageable();
-            }
-
-            private boolean isDamageable() {
-                try {
-                    return stack.isDamageableItem() || isKnownDamageableItemId(id);
-                } catch (RuntimeException exception) {
-                    try {
-                        return item.components().has(DataComponents.MAX_DAMAGE) || isKnownDamageableItemId(id);
-                    } catch (RuntimeException ignored) {
-                        return isKnownDamageableItemId(id);
-                    }
-                }
-            }
-
-            private static boolean isKnownDamageableItemId(String id) {
-                return id.endsWith("_sword")
-                        || id.endsWith("_pickaxe")
-                        || id.endsWith("_axe")
-                        || id.endsWith("_shovel")
-                        || id.endsWith("_hoe")
-                        || id.endsWith("_helmet")
-                        || id.endsWith("_chestplate")
-                        || id.endsWith("_leggings")
-                        || id.endsWith("_boots")
-                        || id.equals("minecraft:bow")
-                        || id.equals("minecraft:crossbow")
-                        || id.equals("minecraft:shield")
-                        || id.equals("minecraft:fishing_rod")
-                        || id.equals("minecraft:carrot_on_a_stick")
-                        || id.equals("minecraft:warped_fungus_on_a_stick")
-                        || id.equals("minecraft:flint_and_steel")
-                        || id.equals("minecraft:shears")
-                        || id.equals("minecraft:brush")
-                        || id.equals("minecraft:trident")
-                        || id.equals("minecraft:mace")
-                        || id.equals("minecraft:elytra")
-                        || id.equals("minecraft:wolf_armor");
+            /** 耐久値付きアイテムも検索・確認できるように一覧へ表示します。 */
+            private boolean isVisibleInSelection() {
+                return !stack.isEmpty();
             }
         }
     }

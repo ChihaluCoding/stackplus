@@ -16,9 +16,6 @@ public class SlotMixin {
 
     @Inject(method = "getMaxStackSize", at = @At("RETURN"), cancellable = true)
     private void customSlotMaxCount(CallbackInfoReturnable<Integer> cir) {
-        if (!StackLimitConfig.areStackRulesEnabled()) {
-            return;
-        }
         int original = cir.getReturnValue();
         if (original <= 1) {
             return;

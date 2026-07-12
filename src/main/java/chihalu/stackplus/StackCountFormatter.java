@@ -14,7 +14,12 @@ public final class StackCountFormatter {
             return count >= 100 ? "99+" : String.valueOf(count);
         }
 
-        if (count < 1000) {
+        return formatCompact(count);
+    }
+
+    /** 表示モードに影響されない K/M/B の短縮表記です。 */
+    public static String formatCompact(int count) {
+        if (count < 1_000) {
             return String.valueOf(count);
         }
 

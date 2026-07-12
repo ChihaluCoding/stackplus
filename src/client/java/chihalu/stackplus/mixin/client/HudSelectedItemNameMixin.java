@@ -32,7 +32,7 @@ public class HudSelectedItemNameMixin {
 
     private ItemStack stackplus$lastSelectedStack = ItemStack.EMPTY;
     private int stackplus$lastSelectedStackCount = -1;
-    private GuiGraphics stackplus$cachedGraphics;
+
 
     @Inject(method = "renderSelectedItemName", at = @At("HEAD"))
     private void stackplus$keepSelectedItemCountVisible(GuiGraphics graphics, CallbackInfo callbackInfo) {
@@ -76,7 +76,8 @@ public class HudSelectedItemNameMixin {
 
         return Component.empty()
                 .append(itemName)
-                .append(Component.literal(" x" + StackCountFormatter.formatExact(lastToolHighlight.getCount())));
+                .append(Component.literal(" x" + StackCountFormatter.formatExact(lastToolHighlight.getCount()))
+                        .withColor(StackLimitConfig.getSelectedItemCountColorRgb()));
     }
 
     @Inject(method = "renderSelectedItemName", at = @At("TAIL"))
@@ -100,11 +101,13 @@ public class HudSelectedItemNameMixin {
         int y = client.getWindow().getGuiScaledHeight() - 59 + (below ? STACKPLUS_BELOW_LINE_OFFSET : 0);
         if (client.gameMode != null && !client.gameMode.getPlayerMode().isCreative()) {
             y -= 13;
-            
+
         }
 
-        MutableComponent countText = Component.literal("x" + StackCountFormatter.formatExact(selectedStack.getCount()))
-                .withColor(0xFFFFFFFF);
-        graphics.drawCenteredString(client.font, countText, screenWidth / 2, y, 0xFFFFFFFF);
+        int alpha = mode.keepsVisible() ? 255 : (toolHighlightTimer > 15 ? 255 : toolHighlightTimer * 17);
+        if (alpha < 0) alpha = 0;
+        int color = (alpha << 24) | StackLimitConfig.getSelectedItemCountColorRgb();
+        MutableComponent countText = Component.literal("x" + StackCountFormatter.formatExact(selectedStack.getCount()));
+        graphics.drawCenteredString(client.font, countText, screenWidth / 2, y, color);
     }
 }

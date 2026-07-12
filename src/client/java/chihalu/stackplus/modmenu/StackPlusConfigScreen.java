@@ -28,10 +28,10 @@ public class StackPlusConfigScreen extends Screen {
     private static final int DISPLAY_MODE_OFFSET = 216;
     private static final int DISPLAY_DESCRIPTION_OFFSET = 240;
     private static final int UPDATE_NOTIFICATIONS_OFFSET = 264;
-    private static final int ACTION_BUTTON_OFFSET = 288;
-    private static final int PANEL_HEIGHT = 350;
-    private static final int COMPACT_PANEL_HEIGHT = 278;
-    private static final int HIDDEN_PRESETS_PANEL_HEIGHT = 214;
+    private static final int ACTION_BUTTON_OFFSET = 312;
+    private static final int PANEL_HEIGHT = 374;
+    private static final int COMPACT_PANEL_HEIGHT = 302;
+    private static final int HIDDEN_PRESETS_PANEL_HEIGHT = 238;
     private static final int COMPACT_SECTION_LABEL_OFFSET = 10;
     private static final int COMPACT_SLIDER_OFFSET = 32;
     private static final int COMPACT_PRESET_LABEL_OFFSET = 80;
@@ -40,14 +40,14 @@ public class StackPlusConfigScreen extends Screen {
     private static final int COMPACT_DISPLAY_MODE_OFFSET = 176;
     private static final int COMPACT_DISPLAY_DESCRIPTION_OFFSET = 200;
     private static final int COMPACT_UPDATE_NOTIFICATIONS_OFFSET = 224;
-    private static final int COMPACT_ACTION_BUTTON_OFFSET = 248;
+    private static final int COMPACT_ACTION_BUTTON_OFFSET = 272;
     private static final int HIDDEN_PRESETS_SECTION_LABEL_OFFSET = 10;
     private static final int HIDDEN_PRESETS_SLIDER_OFFSET = 32;
     private static final int HIDDEN_PRESETS_HINT_OFFSET = 62;
     private static final int HIDDEN_PRESETS_DISPLAY_MODE_OFFSET = 88;
     private static final int HIDDEN_PRESETS_DISPLAY_DESCRIPTION_OFFSET = 112;
     private static final int HIDDEN_PRESETS_UPDATE_NOTIFICATIONS_OFFSET = 136;
-    private static final int HIDDEN_PRESETS_ACTION_BUTTON_OFFSET = 178;
+    private static final int HIDDEN_PRESETS_ACTION_BUTTON_OFFSET = 202;
     private static final int BOTTOM_MARGIN = 8;
     private static final int CONTENT_WIDTH = 360;
     private static final int INPUT_WIDTH = 112;
@@ -57,7 +57,7 @@ public class StackPlusConfigScreen extends Screen {
     private static final int PRESETS_PER_PAGE = PRESET_COLUMNS * PRESET_ROWS;
     private static final int ACTION_BUTTON_WIDTH = 100;
     private static final int ACTION_BUTTON_GAP = 8;
-    private static final int PANEL_COLOR = 0x58000000;
+    private static final int PANEL_COLOR = 0x80000000;
     private static final int PANEL_BORDER_COLOR = 0xFFFFFFFF;
     private static final int[] STACK_LIMIT_PRESETS = {64, 999, 1_000, 10_000, 32_767, 1_000_000, 100_000_000, 1_000_000_000};
     private static final String[] STACK_LIMIT_PRESET_KEYS = {
@@ -76,6 +76,7 @@ public class StackPlusConfigScreen extends Screen {
     private StackLimitConfig.DisplayMode pendingDisplayMode;
     private StackLimitConfig.SelectedItemCountMode pendingSelectedItemCountMode;
     private StackLimitConfig.SelectedItemCountPosition pendingSelectedItemCountPosition;
+    private int pendingSelectedItemCountColorRgb;
     private boolean pendingUpdateNotificationsEnabled;
     private boolean pendingStackLimitPresetsVisible;
     private StackLimitSlider stackLimitSlider;
@@ -83,6 +84,7 @@ public class StackPlusConfigScreen extends Screen {
     private Button displayModeButton;
     private Button selectedItemCountButton;
     private Button selectedItemCountPositionButton;
+    private Button selectedItemCountColorButton;
     private Button updateNotificationsButton;
     private int presetPage;
     private boolean updatingStackLimitInput;
@@ -94,6 +96,7 @@ public class StackPlusConfigScreen extends Screen {
         this.pendingDisplayMode = StackLimitConfig.getDisplayMode();
         this.pendingSelectedItemCountMode = StackLimitConfig.getSelectedItemCountMode();
         this.pendingSelectedItemCountPosition = StackLimitConfig.getSelectedItemCountPosition();
+        this.pendingSelectedItemCountColorRgb = StackLimitConfig.getSelectedItemCountColorRgb();
         this.pendingUpdateNotificationsEnabled = StackLimitConfig.isUpdateNotificationsEnabled();
         this.pendingStackLimitPresetsVisible = StackLimitConfig.areStackLimitPresetsVisible();
     }
@@ -168,6 +171,12 @@ public class StackPlusConfigScreen extends Screen {
                 .bounds(left + secondaryButtonWidth + CONTROL_GAP, layout.updateNotificationsY(), secondaryButtonWidth, 20)
                 .build());
 
+        this.selectedItemCountColorButton = Button.builder(selectedItemCountColorText(pendingSelectedItemCountColorRgb), button ->
+                    StackPlusColorPickerScreen.open(this, pendingSelectedItemCountColorRgb, this::setPendingSelectedItemCountColorRgb))
+                .bounds(left, layout.updateNotificationsY() + 24, secondaryButtonWidth, 20)
+                .build();
+        addRenderableWidget(this.selectedItemCountColorButton);
+
         int firstButtonX = centerX - (ACTION_BUTTON_WIDTH * 2 + ACTION_BUTTON_GAP) / 2;
         addRenderableWidget(Button.builder(Component.translatable("button.stackplus.save"), button -> save())
                 .bounds(firstButtonX, layout.actionButtonY(), ACTION_BUTTON_WIDTH, 20)
@@ -177,6 +186,10 @@ public class StackPlusConfigScreen extends Screen {
                 .build());
     }
 
+    @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(graphics, mouseX, mouseY, partialTick);
+    }
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -193,27 +206,12 @@ public class StackPlusConfigScreen extends Screen {
         drawCenteredText(graphics, Component.translatable("screen.stackplus.config.existing_stack_hint"), this.width / 2, layout.hintY(), 0xFFB8B8B8);
     }
 
-    @Override
-    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // PanelWidgetより先に、ぼかしを伴わない背景を一度だけ描画する。
-        renderStackPlusBackground(graphics, partialTick);
-    }
-
-    private void renderStackPlusBackground(GuiGraphics graphics, float partialTick) {
-        if (this.minecraft.level == null) {
-            this.renderPanorama(graphics, partialTick);
-        }
-        this.renderBlurredBackground(graphics);
-        this.renderTransparentBackground(graphics);
-    }
-
     private void drawCenteredText(GuiGraphics graphics, Component text, int centerX, int y, int color) {
         graphics.drawString(this.font, text, centerX - this.font.width(text) / 2, y, color, false);
     }
-
     @Override
     public void onClose() {
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().setScreenAndShow(parent);
     }
 
     private void save() {
@@ -222,7 +220,8 @@ public class StackPlusConfigScreen extends Screen {
     }
 
     void saveUnchecked() {
-        StackLimitConfig.saveSettings(pendingStackLimit, pendingDisplayMode, pendingSelectedItemCountMode, pendingSelectedItemCountPosition, pendingUpdateNotificationsEnabled);
+        StackLimitConfig.saveSettings(pendingStackLimit, pendingDisplayMode, pendingSelectedItemCountMode, pendingSelectedItemCountPosition,
+                pendingSelectedItemCountColorRgb, pendingUpdateNotificationsEnabled);
         StackLimitConfig.saveStackLimitPresetsVisible(pendingStackLimitPresetsVisible);
     }
 
@@ -251,6 +250,18 @@ public class StackPlusConfigScreen extends Screen {
                 ? "screen.stackplus.config.selected_item_count_position.below"
                 : "screen.stackplus.config.selected_item_count_position.beside";
         return Component.translatable("screen.stackplus.config.selected_item_count_position", Component.translatable(positionKey));
+    }
+
+    private void setPendingSelectedItemCountColorRgb(int colorRgb) {
+        pendingSelectedItemCountColorRgb = colorRgb & 0xFFFFFF;
+        if (selectedItemCountColorButton != null) {
+            selectedItemCountColorButton.setMessage(selectedItemCountColorText(pendingSelectedItemCountColorRgb));
+        }
+    }
+
+    private static Component selectedItemCountColorText(int colorRgb) {
+        return Component.translatable("screen.stackplus.config.selected_item_count_color",
+                Component.literal(String.format("#%06X", colorRgb & 0xFFFFFF)).withColor(colorRgb));
     }
 
     private static Component updateNotificationsText(boolean enabled) {
@@ -563,10 +574,7 @@ public class StackPlusConfigScreen extends Screen {
         @Override
         protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
             graphics.fill(getX(), getY(), getRight(), getBottom(), PANEL_COLOR);
-            graphics.fill(getX(), getY(), getX() + getWidth(), getY() + 1, PANEL_BORDER_COLOR);
-            graphics.fill(getX(), getY() + getHeight() - 1, getX() + getWidth(), getY() + getHeight(), PANEL_BORDER_COLOR);
-            graphics.fill(getX(), getY(), getX() + 1, getY() + getHeight(), PANEL_BORDER_COLOR);
-            graphics.fill(getX() + getWidth() - 1, getY(), getX() + getWidth(), getY() + getHeight(), PANEL_BORDER_COLOR);
+            graphics.renderOutline(getX(), getY(), getWidth(), getHeight(), PANEL_BORDER_COLOR);
         }
 
         @Override

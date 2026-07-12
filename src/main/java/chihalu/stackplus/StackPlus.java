@@ -6,7 +6,7 @@ import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CustomStackLimit implements ModInitializer {
+public class StackPlus implements ModInitializer {
 	public static final String MOD_ID = "stackplus";
 
 	// このロガーはコンソールとログファイルにテキストを書き込むために使用されます。

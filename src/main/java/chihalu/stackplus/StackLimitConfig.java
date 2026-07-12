@@ -52,18 +52,24 @@ public class StackLimitConfig {
     private static final String ITEM_LIMIT_KEY_PREFIX = "item.";
     private static final String STACK_LIMIT_KEY_PREFIX = "stack.";
     private static final String FORCED_ITEM_KEY_PREFIX = "force.";
+    private static final String FORBIDDEN_ITEM_KEY_PREFIX = "forbid.item.";
+    private static final String SELECTED_ITEM_COUNT_COLOR_KEY = "selectedItemCountColor";
+    private static final String DURABILITY_WARNING_SUPPRESSED_KEY = "durabilityWarningSuppressed";
     private static final NumberFormat NUMBER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
     private static final ConfigValues LOADED_CONFIG = loadConfig();
     private static int stackLimit = LOADED_CONFIG.stackLimit();
     private static DisplayMode displayMode = LOADED_CONFIG.displayMode();
     private static SelectedItemCountMode selectedItemCountMode = LOADED_CONFIG.selectedItemCountMode();
     private static SelectedItemCountPosition selectedItemCountPosition = LOADED_CONFIG.selectedItemCountPosition();
+    private static int selectedItemCountColorRgb = LOADED_CONFIG.selectedItemCountColorRgb();
+    private static boolean durabilityWarningSuppressed = LOADED_CONFIG.durabilityWarningSuppressed();
     private static boolean updateNotificationsEnabled = LOADED_CONFIG.updateNotificationsEnabled();
     private static boolean stackLimitPresetsVisible = LOADED_CONFIG.stackLimitPresetsVisible();
     private static final List<Integer> customStackLimitPresets = new ArrayList<>(LOADED_CONFIG.customStackLimitPresets());
     private static final Map<String, Integer> itemStackLimits = new LinkedHashMap<>(LOADED_CONFIG.itemStackLimits());
     private static final Map<String, Integer> stackVariantLimits = new LinkedHashMap<>(LOADED_CONFIG.stackVariantLimits());
     private static final Set<String> forcedStackableItems = new LinkedHashSet<>(LOADED_CONFIG.forcedStackableItems());
+    private static final Set<String> forbiddenStackableItems = new LinkedHashSet<>(LOADED_CONFIG.forbiddenStackableItems());
     private static final Map<String, String> lastNotifiedReleaseVersions = new LinkedHashMap<>(LOADED_CONFIG.lastNotifiedReleaseVersions());
     private static volatile boolean serverRulesActive;
     private static volatile boolean remoteSession;
@@ -180,6 +186,7 @@ public class StackLimitConfig {
         itemStackLimits.forEach((itemId, itemLimit) -> properties.setProperty(ITEM_LIMIT_KEY_PREFIX + itemId, String.valueOf(itemLimit)));
         stackVariantLimits.forEach((key, limit) -> properties.setProperty(STACK_LIMIT_KEY_PREFIX + key, String.valueOf(limit)));
         forcedStackableItems.forEach(itemId -> properties.setProperty(FORCED_ITEM_KEY_PREFIX + itemId, "true"));
+        forbiddenStackableItems.forEach(itemId -> properties.setProperty(FORBIDDEN_ITEM_KEY_PREFIX + itemId, "true"));
         StringWriter writer = new StringWriter();
         try {
             properties.store(writer, null);
@@ -233,6 +240,8 @@ public class StackLimitConfig {
             stackVariantLimits.putAll(loadStackVariantLimits(properties));
             forcedStackableItems.clear();
             forcedStackableItems.addAll(loadForcedStackableItems(properties));
+            forbiddenStackableItems.clear();
+            forbiddenStackableItems.addAll(StackRuleConfigSupport.loadEnabledRuleIds(properties, FORBIDDEN_ITEM_KEY_PREFIX));
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException("Invalid StackPlus server rules", exception);
         }
@@ -278,6 +287,24 @@ public class StackLimitConfig {
     public static void setSelectedItemCountPosition(SelectedItemCountPosition position) {
         selectedItemCountPosition = position;
     }
+
+    public static int getSelectedItemCountColorRgb() {
+        return selectedItemCountColorRgb;
+    }
+
+    public static void setSelectedItemCountColorRgb(int colorRgb) {
+        selectedItemCountColorRgb = colorRgb & 0xFFFFFF;
+    }
+
+    public static boolean isDurabilityWarningSuppressed() {
+        return durabilityWarningSuppressed;
+    }
+
+    public static void setDurabilityWarningSuppressed(boolean suppressed) {
+        durabilityWarningSuppressed = suppressed;
+        saveConfig();
+    }
+
 
     public static boolean isUpdateNotificationsEnabled() {
         return updateNotificationsEnabled;
@@ -342,11 +369,13 @@ public class StackLimitConfig {
 
     public static void saveSettings(int stackLimitValue, DisplayMode displayModeValue, SelectedItemCountMode selectedItemCountModeValue,
                                     SelectedItemCountPosition selectedItemCountPositionValue,
+                                    int selectedItemCountColorRgbValue,
                                     boolean updateNotificationsEnabledValue) {
         setStackLimit(stackLimitValue);
         setDisplayMode(displayModeValue);
         setSelectedItemCountMode(selectedItemCountModeValue);
         setSelectedItemCountPosition(selectedItemCountPositionValue);
+        setSelectedItemCountColorRgb(selectedItemCountColorRgbValue);
         setUpdateNotificationsEnabled(updateNotificationsEnabledValue);
         saveConfig();
     }
@@ -389,7 +418,30 @@ public class StackLimitConfig {
         }
         int clampedValue = clampStackLimit(value);
         for (ItemStack stack : stacks) {
+            if (clampedValue == getDefaultStackLimit(stack, stackLimit)) {
+                removeItemStackLimit(stack);
+                continue;
+            }
             applyItemStackLimit(stack, clampedValue);
+        }
+        saveConfig();
+    }
+
+    /** 設定を持たない状態での、このアイテムの既定スタック数を返します。 */
+    public static int getDefaultStackLimit(ItemStack stack, int defaultStackLimit) {
+        return stack.isDamageableItem() ? 1 : clampStackLimit(defaultStackLimit);
+    }
+
+    /** アイテム単位の明示的なスタック禁止を保存します。 */
+    public static void setItemStackingForbidden(Item item, boolean forbidden) {
+        if (serverRulesActive) {
+            return;
+        }
+        String itemId = getItemId(item);
+        if (forbidden) {
+            forbiddenStackableItems.add(itemId);
+        } else {
+            forbiddenStackableItems.remove(itemId);
         }
         saveConfig();
     }
@@ -402,6 +454,7 @@ public class StackLimitConfig {
         itemStackLimits.remove(itemId);
         removeStackVariantLimits(itemId);
         forcedStackableItems.remove(itemId);
+        forbiddenStackableItems.remove(itemId);
         saveConfig();
     }
 
@@ -416,6 +469,7 @@ public class StackLimitConfig {
         }
 
         stackVariantLimits.remove(stackVariantKey);
+        forbiddenStackableItems.remove(getItemId(stack.getItem()));
         saveConfig();
     }
 
@@ -428,6 +482,7 @@ public class StackLimitConfig {
             itemStackLimits.remove(itemId);
             removeStackVariantLimits(itemId);
             forcedStackableItems.remove(itemId);
+            forbiddenStackableItems.remove(itemId);
         }
         saveConfig();
     }
@@ -443,6 +498,7 @@ public class StackLimitConfig {
                 itemStackLimits.remove(itemId);
                 removeStackVariantLimits(itemId);
                 forcedStackableItems.remove(itemId);
+                forbiddenStackableItems.remove(itemId);
             } else {
                 stackVariantLimits.remove(stackVariantKey);
             }
@@ -450,21 +506,35 @@ public class StackLimitConfig {
         saveConfig();
     }
 
+    /** 個別設定（アイテム・バリアント・禁止）の有無を一覧絞り込み用に返します。 */
+    public static boolean hasConfiguredStackLimit(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        String itemId = getItemId(stack.getItem());
+        String stackVariantKey = getStackVariantKey(stack);
+        return forbiddenStackableItems.contains(itemId)
+                || (stackVariantKey != null && stackVariantLimits.containsKey(stackVariantKey))
+                || itemStackLimits.containsKey(itemId);
+    }
+
+    public static boolean isItemStackingForbidden(Item item) {
+        return forbiddenStackableItems.contains(getItemId(item));
+    }
+
     private static void applyItemStackLimit(Item item, int clampedValue) {
-        ItemStack sampleStack = new ItemStack(item);
-        if (sampleStack.isDamageableItem()) {
-            return;
+        String itemId = getItemId(item);
+        if (clampedValue > 1) {
+            forcedStackableItems.add(itemId);
+        } else {
+            forcedStackableItems.remove(itemId);
         }
 
-        if (sampleStack.getMaxStackSize() <= 1) {
-            forcedStackableItems.add(getItemId(item));
-        }
-
-        itemStackLimits.put(getItemId(item), clampedValue);
+        itemStackLimits.put(itemId, clampedValue);
     }
 
     private static void applyItemStackLimit(ItemStack stack, int clampedValue) {
-        if (stack.isEmpty() || stack.isDamageableItem()) {
+        if (stack.isEmpty()) {
             return;
         }
 
@@ -500,6 +570,9 @@ public class StackLimitConfig {
         if (!areStackRulesEnabled()) {
             return originalLimit;
         }
+        if (isItemStackingForbidden(item)) {
+            return 1;
+        }
         if (!canApplyConfiguredStackLimit(item, originalLimit)) {
             return originalLimit;
         }
@@ -513,16 +586,16 @@ public class StackLimitConfig {
             return stackLimit;
         }
 
-        return getAdjustedStackLimit(originalLimit);
+        return originalLimit <= 1 && !new ItemStack(item).isDamageableItem()
+                ? stackLimit
+                : getAdjustedStackLimit(originalLimit);
     }
 
     private static boolean canApplyConfiguredStackLimit(Item item, int originalLimit) {
-        ItemStack sampleStack = new ItemStack(item);
-        if (sampleStack.isDamageableItem()) {
-            return false;
-        }
-
-        return originalLimit > 1 || isForcedStackableItem(sampleStack);
+        return originalLimit > 1
+                || !new ItemStack(item).isDamageableItem()
+                || itemStackLimits.containsKey(getItemId(item))
+                || isForcedStackableItem(item);
     }
 
     public static int getAdjustedStackLimit(ItemStack stack, int originalLimit) {
@@ -539,7 +612,7 @@ public class StackLimitConfig {
         if (!areStackRulesEnabled()) {
             return originalLimit;
         }
-        if (stack.isEmpty() || stack.isDamageableItem()) {
+        if (stack.isEmpty()) {
             return originalLimit;
         }
 
@@ -554,7 +627,10 @@ public class StackLimitConfig {
             if (itemLimit != null) {
                 return clampStackLimit(itemLimit);
             }
-            return originalLimit;
+            if (isItemStackingForbidden(stack.getItem())) {
+                return 1;
+            }
+            return stack.isDamageableItem() ? originalLimit : clampStackLimit(stackLimit);
         }
 
         return clampStackLimit(getAdjustedStackLimit(stack.getItem(), originalLimit));
@@ -584,15 +660,19 @@ public class StackLimitConfig {
         properties.setProperty(DISPLAY_MODE_KEY, displayMode.getSerializedName());
         properties.setProperty(SELECTED_ITEM_COUNT_MODE_KEY, selectedItemCountMode.getSerializedName());
         properties.setProperty(SELECTED_ITEM_COUNT_POSITION_KEY, selectedItemCountPosition.getSerializedName());
+        properties.setProperty(SELECTED_ITEM_COUNT_COLOR_KEY, String.format(Locale.ROOT, "%06X", selectedItemCountColorRgb));
+        properties.setProperty(DURABILITY_WARNING_SUPPRESSED_KEY, String.valueOf(durabilityWarningSuppressed));
         properties.setProperty(UPDATE_NOTIFICATIONS_ENABLED_KEY, String.valueOf(updateNotificationsEnabled));
         properties.setProperty(STACK_LIMIT_PRESETS_VISIBLE_KEY, String.valueOf(stackLimitPresetsVisible));
         properties.setProperty(CUSTOM_STACK_LIMIT_PRESETS_KEY, serializeCustomStackLimitPresets());
         Map<String, Integer> persistedItemLimits = persistedStackRules == null ? itemStackLimits : loadItemStackLimits(persistedStackRules);
         Map<String, Integer> persistedVariantLimits = persistedStackRules == null ? stackVariantLimits : loadStackVariantLimits(persistedStackRules);
         Set<String> persistedForcedItems = persistedStackRules == null ? forcedStackableItems : loadForcedStackableItems(persistedStackRules);
+        Set<String> persistedForbiddenItems = persistedStackRules == null ? forbiddenStackableItems : StackRuleConfigSupport.loadEnabledRuleIds(persistedStackRules, FORBIDDEN_ITEM_KEY_PREFIX);
         persistedItemLimits.forEach((itemId, itemLimit) -> properties.setProperty(ITEM_LIMIT_KEY_PREFIX + itemId, String.valueOf(itemLimit)));
         persistedVariantLimits.forEach((stackVariantKey, stackVariantLimit) -> properties.setProperty(STACK_LIMIT_KEY_PREFIX + stackVariantKey, String.valueOf(stackVariantLimit)));
         persistedForcedItems.forEach(itemId -> properties.setProperty(FORCED_ITEM_KEY_PREFIX + itemId, "true"));
+        persistedForbiddenItems.forEach(itemId -> properties.setProperty(FORBIDDEN_ITEM_KEY_PREFIX + itemId, "true"));
         lastNotifiedReleaseVersions.forEach((gameVersion, releaseVersion) ->
                 properties.setProperty(LAST_NOTIFIED_RELEASE_KEY_PREFIX + gameVersion, releaseVersion));
 
@@ -603,12 +683,12 @@ public class StackLimitConfig {
                 properties.store(output, "StackPlus configuration");
             }
         } catch (IOException exception) {
-            CustomStackLimit.LOGGER.warn("StackPlus 設定ファイルの保存に失敗しました: {}", configPath, exception);
+            StackPlus.LOGGER.warn("StackPlus 設定ファイルの保存に失敗しました: {}", configPath, exception);
         }
     }
 
     private static boolean isForcedStackableItem(Item item) {
-        return isForcedStackableItem(new ItemStack(item));
+        return forcedStackableItems.contains(getItemId(item));
     }
 
     /**
@@ -617,11 +697,16 @@ public class StackLimitConfig {
      * パス文字列の endsWith/startsWith による誤ヒットを防ぎます。
      */
     private static boolean isForcedStackableItem(ItemStack stack) {
-        Item item = stack.getItem();
+        return forcedStackableItems.contains(getItemId(stack.getItem()))
+                || isNaturallyUnstackable(stack);
+    }
 
-        if (forcedStackableItems.contains(getItemId(item))) {
-            return true;
+    /** 耐久品やバニラ固有ルールで自然にスタックできないアイテムを判定します。 */
+    public static boolean isNaturallyUnstackable(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
         }
+        Item item = stack.getItem();
 
         if (item instanceof BedItem
                 || item instanceof BoatItem
@@ -666,16 +751,21 @@ public class StackLimitConfig {
     }
 
     private static String getStackVariantKey(ItemStack stack) {
-        String itemId = getItemId(stack.getItem());
-        String defaultComponents = new ItemStack(stack.getItem()).getComponents().toString();
-        String stackComponents = stack.getComponents().toString();
-        if (defaultComponents.equals(stackComponents)) {
+        try {
+            String itemId = getItemId(stack.getItem());
+            String defaultComponents = new ItemStack(stack.getItem()).getComponents().toString();
+            String stackComponents = stack.getComponents().toString();
+            if (defaultComponents.equals(stackComponents)) {
+                return null;
+            }
+
+            String encodedComponents = Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(stackComponents.getBytes(StandardCharsets.UTF_8));
+            return itemId + "#" + encodedComponents;
+        } catch (RuntimeException exception) {
+            // タイトル画面ではアイテムコンポーネントが未初期化のため、アイテム単位として扱います。
             return null;
         }
-
-        String encodedComponents = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(stackComponents.getBytes(StandardCharsets.UTF_8));
-        return itemId + "#" + encodedComponents;
     }
 
     private static void removeStackVariantLimits(String itemId) {
@@ -685,7 +775,7 @@ public class StackLimitConfig {
     private static ConfigValues loadConfig() {
         Path configPath = getConfigPath();
         if (!Files.exists(configPath)) {
-            return new ConfigValues(DEFAULT_STACK_LIMIT, DisplayMode.COMPACT, SelectedItemCountMode.ON_SWITCH, SelectedItemCountPosition.BESIDE, true, true, List.of(), Map.of(), Map.of(), Set.of(), Map.of());
+            return defaultConfigValues();
         }
 
         Properties properties = new Properties();
@@ -695,15 +785,19 @@ public class StackLimitConfig {
             DisplayMode loadedDisplayMode = DisplayMode.fromSerializedName(properties.getProperty(DISPLAY_MODE_KEY, DisplayMode.COMPACT.getSerializedName()));
             SelectedItemCountMode loadedSelectedItemCountMode = loadSelectedItemCountMode(properties);
             SelectedItemCountPosition loadedSelectedItemCountPosition = SelectedItemCountPosition.fromSerializedName(properties.getProperty(SELECTED_ITEM_COUNT_POSITION_KEY, SelectedItemCountPosition.BESIDE.getSerializedName()));
+            int loadedSelectedItemCountColorRgb = loadSelectedItemCountColorRgb(properties);
+            boolean loadedDurabilityWarningSuppressed = Boolean.parseBoolean(properties.getProperty(DURABILITY_WARNING_SUPPRESSED_KEY, "false"));
             boolean loadedUpdateNotificationsEnabled = Boolean.parseBoolean(properties.getProperty(UPDATE_NOTIFICATIONS_ENABLED_KEY, "true"));
             boolean loadedStackLimitPresetsVisible = Boolean.parseBoolean(properties.getProperty(STACK_LIMIT_PRESETS_VISIBLE_KEY, "true"));
-            return new ConfigValues(loadedStackLimit, loadedDisplayMode, loadedSelectedItemCountMode, loadedSelectedItemCountPosition, loadedUpdateNotificationsEnabled,
-                    loadedStackLimitPresetsVisible, loadCustomStackLimitPresets(properties), loadItemStackLimits(properties), loadStackVariantLimits(properties),
-                    loadForcedStackableItems(properties), loadLastNotifiedReleaseVersions(properties));
+            return new ConfigValues(loadedStackLimit, loadedDisplayMode, loadedSelectedItemCountMode, loadedSelectedItemCountPosition, loadedSelectedItemCountColorRgb,
+                    loadedDurabilityWarningSuppressed, loadedUpdateNotificationsEnabled, loadedStackLimitPresetsVisible, loadCustomStackLimitPresets(properties), loadItemStackLimits(properties),
+                    loadStackVariantLimits(properties), loadForcedStackableItems(properties),
+                    StackRuleConfigSupport.loadEnabledRuleIds(properties, FORBIDDEN_ITEM_KEY_PREFIX),
+                    loadLastNotifiedReleaseVersions(properties));
         } catch (IOException | NumberFormatException exception) {
-            CustomStackLimit.LOGGER.warn("StackPlus 設定ファイルの読み込みに失敗しました。既定値を使用します: {}", configPath, exception);
+            StackPlus.LOGGER.warn("StackPlus 設定ファイルの読み込みに失敗しました。既定値を使用します: {}", configPath, exception);
             backupBrokenConfig(configPath);
-            return new ConfigValues(DEFAULT_STACK_LIMIT, DisplayMode.COMPACT, SelectedItemCountMode.ON_SWITCH, SelectedItemCountPosition.BESIDE, true, true, List.of(), Map.of(), Map.of(), Set.of(), Map.of());
+            return defaultConfigValues();
         }
     }
 
@@ -715,6 +809,24 @@ public class StackLimitConfig {
 
         boolean legacyAlwaysVisible = Boolean.parseBoolean(properties.getProperty(SELECTED_ITEM_COUNT_ALWAYS_VISIBLE_KEY, "false"));
         return legacyAlwaysVisible ? SelectedItemCountMode.ALWAYS : SelectedItemCountMode.ON_SWITCH;
+    }
+
+    private static int loadSelectedItemCountColorRgb(Properties properties) {
+        String storedColor = properties.getProperty(SELECTED_ITEM_COUNT_COLOR_KEY, "white").strip();
+        return switch (storedColor) {
+            case "white" -> 0xFFFFFF;
+            case "yellow" -> 0xFFFF55;
+            case "aqua" -> 0x55FFFF;
+            case "green" -> 0x55FF55;
+            case "light_purple" -> 0xFF55FF;
+            default -> {
+                try {
+                    yield Integer.parseInt(storedColor.replace("#", ""), 16) & 0xFFFFFF;
+                } catch (NumberFormatException exception) {
+                    yield 0xFFFFFF;
+                }
+            }
+        };
     }
 
     private static Map<String, Integer> loadItemStackLimits(Properties properties) {
@@ -733,7 +845,7 @@ public class StackLimitConfig {
                 int itemLimit = clampStackLimit(Integer.parseInt(properties.getProperty(propertyName)));
                 loadedItemStackLimits.put(itemId, itemLimit);
             } catch (NumberFormatException exception) {
-                CustomStackLimit.LOGGER.warn("StackPlus 設定のアイテム別上限をスキップしました: {}={}", propertyName, properties.getProperty(propertyName));
+                StackPlus.LOGGER.warn("StackPlus 設定のアイテム別上限をスキップしました: {}={}", propertyName, properties.getProperty(propertyName));
             }
         }
         return loadedItemStackLimits;
@@ -761,7 +873,7 @@ public class StackLimitConfig {
                     }
                 }
             } catch (NumberFormatException exception) {
-                CustomStackLimit.LOGGER.warn("StackPlus 設定の自作プリセットをスキップしました: {}", trimmedPreset);
+                StackPlus.LOGGER.warn("StackPlus 設定の自作プリセットをスキップしました: {}", trimmedPreset);
             }
         }
         return loadedPresets;
@@ -805,7 +917,7 @@ public class StackLimitConfig {
                 int stackVariantLimit = clampStackLimit(Integer.parseInt(properties.getProperty(propertyName)));
                 loadedStackVariantLimits.put(stackVariantKey, stackVariantLimit);
             } catch (NumberFormatException exception) {
-                CustomStackLimit.LOGGER.warn("StackPlus 設定の種類別上限をスキップしました: {}={}", propertyName, properties.getProperty(propertyName));
+                StackPlus.LOGGER.warn("StackPlus 設定の種類別上限をスキップしました: {}={}", propertyName, properties.getProperty(propertyName));
             }
         }
         return loadedStackVariantLimits;
@@ -831,6 +943,11 @@ public class StackLimitConfig {
         return FabricLoader.getInstance().getConfigDir().resolve(CONFIG_FILE_NAME);
     }
 
+    private static ConfigValues defaultConfigValues() {
+        return new ConfigValues(DEFAULT_STACK_LIMIT, DisplayMode.COMPACT, SelectedItemCountMode.ON_SWITCH,
+                SelectedItemCountPosition.BESIDE, 0xFFFFFF, false, true, true, List.of(), Map.of(), Map.of(), Set.of(), Set.of(), Map.of());
+    }
+
     private static void backupBrokenConfig(Path configPath) {
         if (!Files.exists(configPath)) {
             return;
@@ -843,18 +960,19 @@ public class StackLimitConfig {
 
         try {
             Files.move(configPath, backupPath);
-            CustomStackLimit.LOGGER.warn("StackPlus の壊れた設定ファイルを退避しました: {}", backupPath);
+            StackPlus.LOGGER.warn("StackPlus の壊れた設定ファイルを退避しました: {}", backupPath);
         } catch (IOException backupException) {
-            CustomStackLimit.LOGGER.warn("StackPlus の壊れた設定ファイル退避に失敗しました: {}", configPath, backupException);
+            StackPlus.LOGGER.warn("StackPlus の壊れた設定ファイル退避に失敗しました: {}", configPath, backupException);
         }
     }
 
     private record ConfigValues(int stackLimit, DisplayMode displayMode, SelectedItemCountMode selectedItemCountMode,
-                                SelectedItemCountPosition selectedItemCountPosition,
+                                SelectedItemCountPosition selectedItemCountPosition, int selectedItemCountColorRgb,
+                                boolean durabilityWarningSuppressed,
                                 boolean updateNotificationsEnabled, boolean stackLimitPresetsVisible,
                                 List<Integer> customStackLimitPresets,
-                                Map<String, Integer> itemStackLimits,
-                                Map<String, Integer> stackVariantLimits, Set<String> forcedStackableItems,
+                                Map<String, Integer> itemStackLimits, Map<String, Integer> stackVariantLimits,
+                                Set<String> forcedStackableItems, Set<String> forbiddenStackableItems,
                                 Map<String, String> lastNotifiedReleaseVersions) {
     }
 }

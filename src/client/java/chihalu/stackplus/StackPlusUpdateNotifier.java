@@ -53,7 +53,7 @@ public final class StackPlusUpdateNotifier {
         CompletableFuture.supplyAsync(() -> fetchLatestVersion(currentModVersion, currentGameVersion))
                 .thenAccept(update -> update.ifPresent(value -> client.execute(() -> pendingUpdate = value)))
                 .exceptionally(exception -> {
-                    CustomStackLimit.LOGGER.warn("StackPlus の更新通知取得に失敗しました", exception);
+                    StackPlus.LOGGER.warn("StackPlus の更新通知取得に失敗しました", exception);
                     return null;
                 });
     }
@@ -76,7 +76,7 @@ public final class StackPlusUpdateNotifier {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() != 200) {
-                CustomStackLimit.LOGGER.warn("StackPlus 更新通知: Modrinth API がステータス {} を返しました", response.statusCode());
+                StackPlus.LOGGER.warn("StackPlus 更新通知: Modrinth API がステータス {} を返しました", response.statusCode());
                 return Optional.empty();
             }
 
@@ -101,7 +101,7 @@ public final class StackPlusUpdateNotifier {
             if (exception instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            CustomStackLimit.LOGGER.warn("StackPlus の更新通知データ取得に失敗しました", exception);
+            StackPlus.LOGGER.warn("StackPlus の更新通知データ取得に失敗しました", exception);
             return Optional.empty();
         }
     }
