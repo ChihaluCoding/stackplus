@@ -1,4 +1,4 @@
-﻿{
+{
   "button.stackplus.back": "Retour",
   "button.stackplus.add_preset": "Ajouter",
   "button.stackplus.cancel": "Annuler",
@@ -56,8 +56,29 @@
   "screen.stackplus.item_selection.selected_title": "Objet sélectionné",
   "screen.stackplus.item_selection.title": "Limites par objet",
   "screen.stackplus.item_selection.value": "Clique pour définir %s / Maj+clic pour sélection multiple",
-  "screen.stackplus.config.selected_item_count_position": "Position du nombre d’objets : %s",
+  "screen.stackplus.config.selected_item_count_color": "Couleur de la quantité : %s",
+  "screen.stackplus.config.selected_item_count_color.white": "Blanc",
+  "screen.stackplus.config.selected_item_count_color.yellow": "Jaune",
+  "screen.stackplus.config.selected_item_count_color.aqua": "Cyan",
+  "screen.stackplus.config.selected_item_count_color.green": "Vert",
+  "screen.stackplus.config.selected_item_count_color.light_purple": "Violet clair",
+  "screen.stackplus.item_selection.configured_only": "Configurés uniquement : %s",
+  "screen.stackplus.item_selection.configured_only.on": "Activé",
+  "screen.stackplus.item_selection.configured_only.off": "Désactivé",
+  "screen.stackplus.item_selection.stacking_forbidden": "Empilement : %s",
+  "screen.stackplus.item_selection.stacking_forbidden.on": "Interdit",
+  "screen.stackplus.item_selection.stacking_forbidden.off": "Autorisé",
+  "screen.stackplus.color_picker.title": "Choisir la couleur de la quantité",
+  "screen.stackplus.color_picker.hint": "Cliquez sur une couleur du cercle",
+  "screen.stackplus.item_selection.sort.creative": "Créatif",
+  "tooltip.stackplus.count": "Quantité : %s",
+  "tooltip.stackplus.count.compact": "Quantité : %s (%s)",
+  "screen.stackplus.config.selected_item_count_position": "Position de la quantité : %s",
   "screen.stackplus.config.selected_item_count_position.beside": "À droite",
   "screen.stackplus.config.selected_item_count_position.below": "En dessous",
-  "tooltip.stackplus.count": "Quantité : %s"
+  "screen.stackplus.item_selection.world_required": "Les objets seront affichés après être entré une fois dans un monde",
+  "screen.stackplus.durability_warning.title": "Avertissement concernant la durabilité",
+  "screen.stackplus.durability_warning.line1": "La durabilité de tous les objets de la pile diminuera.",
+  "screen.stackplus.durability_warning.line2": "Activez cette option uniquement si vous comprenez ce comportement.",
+  "screen.stackplus.durability_warning.suppress": "Ne plus afficher"
 }

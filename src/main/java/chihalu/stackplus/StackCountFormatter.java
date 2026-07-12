@@ -14,7 +14,12 @@ public final class StackCountFormatter {
             return count >= 100 ? "99+" : String.valueOf(count);
         }
 
-        if (count < 1000) {
+        return formatCompact(count);
+    }
+
+    /** 表示モードに影響されない K/M/B の短縮表記です。 */
+    public static String formatCompact(int count) {
+        if (count < 1_000) {
             return String.valueOf(count);
         }
 
@@ -37,5 +42,4 @@ public final class StackCountFormatter {
     private static String formatUnit(int count, int unitValue, String suffix) {
         return String.format(Locale.ROOT, "%d%s", count / unitValue, suffix);
     }
-
 }
