@@ -4,11 +4,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -22,28 +22,24 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class StackPlusUpdateNotifier {
-    private static final String MODRINTH_SLUG = "stackplus";
-    private static final String MODRINTH_PROJECT_URL = "https://modrinth.com/mod/" + MODRINTH_SLUG;
-    private static final String MODRINTH_VERSIONS_URL = "https://api.modrinth.com/v2/project/" + MODRINTH_SLUG + "/version";
-    private static final String FABRIC_LOADER = "fabric";
-    private static final int MAX_CHANGELOG_LINES = 5;
-    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
-            .build();
+    private static final String MODRINTH_VERSIONS_URL = "https://api.modrinth.com/v2/project/stackplus/version";
+    private static final String MODRINTH_PAGE_URL = "https://modrinth.com/mod/stackplus";
+    private static final String RELEASE_NOTE_URL = "https://chihalucoding.github.io/stackplus-release-note/";
     private static final AtomicBoolean checkStartedThisSession = new AtomicBoolean();
+    private static volatile UpdateNotice pendingUpdate;
 
     private StackPlusUpdateNotifier() {
     }
 
     public static void register() {
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> checkOnJoin(client));
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> pendingUpdate = null);
+        ClientTickEvents.END_CLIENT_TICK.register(StackPlusUpdateNotifier::flushPendingUpdate);
     }
 
     private static void checkOnJoin(MinecraftClient client) {
@@ -52,124 +48,95 @@ public final class StackPlusUpdateNotifier {
         }
 
         String currentModVersion = getCurrentModVersion();
-        String gameVersion = SharedConstants.getGameVersion().getName();
-        HttpRequest request = HttpRequest.newBuilder(buildVersionsUri(gameVersion))
-                .timeout(Duration.ofSeconds(12))
-                .header("Accept", "application/json")
-                .header("User-Agent", "StackPlus/" + currentModVersion + " (https://github.com/ChihaluCoding/CustomStackLimit)")
-                .GET()
-                .build();
-
-        CompletableFuture.supplyAsync(() -> fetchLatestUpdate(request, currentModVersion))
-                .thenAccept(update -> update.ifPresent(value -> client.execute(() -> sendUpdateMessage(client, value))))
+        String currentGameVersion = getCurrentGameVersion();
+        CompletableFuture.supplyAsync(() -> fetchLatestVersion(currentModVersion, currentGameVersion))
+                .thenAccept(update -> update.ifPresent(value -> client.execute(() -> pendingUpdate = value)))
                 .exceptionally(exception -> {
-                    CustomStackLimit.LOGGER.warn("StackPlus の更新確認に失敗しました", exception);
+                    StackPlus.LOGGER.warn("StackPlus の更新通知取得に失敗しました", exception);
                     return null;
                 });
     }
 
-    private static URI buildVersionsUri(String gameVersion) {
-        String loaders = encodeJsonArray(FABRIC_LOADER);
-        String gameVersions = encodeJsonArray(gameVersion);
-        return URI.create(MODRINTH_VERSIONS_URL + "?loaders=" + loaders + "&game_versions=" + gameVersions);
-    }
-
-    private static String encodeJsonArray(String value) {
-        return URLEncoder.encode("[\"" + value + "\"]", StandardCharsets.UTF_8);
-    }
-
-    private static Optional<ModrinthUpdate> fetchLatestUpdate(HttpRequest request, String currentModVersion) {
+    private static Optional<UpdateNotice> fetchLatestVersion(String currentModVersion, String currentGameVersion) {
         try {
-            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                CustomStackLimit.LOGGER.warn("Modrinth API がエラーを返しました: HTTP {}", response.statusCode());
+            HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+            String gameVersions = URLEncoder.encode("[\"" + currentGameVersion + "\"]", StandardCharsets.UTF_8);
+            String loaders = URLEncoder.encode("[\"fabric\"]", StandardCharsets.UTF_8);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(MODRINTH_VERSIONS_URL + "?game_versions=" + gameVersions + "&loaders=" + loaders))
+                    .header("User-Agent", "StackPlus/" + currentModVersion + " (github:ChihaluCoding)")
+                    .timeout(Duration.ofSeconds(15)).GET().build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            if (response.statusCode() != 200) {
+                StackPlus.LOGGER.warn("StackPlus 更新通知: Modrinth API がステータス {} を返しました", response.statusCode());
                 return Optional.empty();
             }
 
             JsonArray versions = JsonParser.parseString(response.body()).getAsJsonArray();
-            for (JsonElement element : versions) {
-                JsonObject version = element.getAsJsonObject();
-                if (!"listed".equals(getString(version, "status")) || compareVersions(getString(version, "version_number"), currentModVersion) <= 0) {
-                    continue;
-                }
-                return Optional.of(new ModrinthUpdate(getString(version, "version_number"), getString(version, "changelog")));
+            if (versions.isEmpty()) {
+                return Optional.empty();
             }
-        } catch (IOException | InterruptedException | IllegalStateException exception) {
+            JsonObject latest = versions.get(0).getAsJsonObject();
+            String latestVersion = getString(latest, "version_number");
+            if (latestVersion.isBlank() || compareVersions(latestVersion, currentModVersion) <= 0
+                    || latestVersion.equalsIgnoreCase(StackLimitConfig.getLastNotifiedReleaseVersion(currentGameVersion))) {
+                return Optional.empty();
+            }
+            return Optional.of(new UpdateNotice(latestVersion));
+        } catch (IOException | IllegalStateException | InterruptedException exception) {
             if (exception instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            CustomStackLimit.LOGGER.warn("Modrinth API から更新情報を取得できませんでした", exception);
+            StackPlus.LOGGER.warn("StackPlus の更新通知データ取得に失敗しました", exception);
+            return Optional.empty();
         }
-        return Optional.empty();
     }
 
     private static String getCurrentModVersion() {
-        return FabricLoader.getInstance()
-                .getModContainer("stackplus")
-                .map(container -> container.getMetadata().getVersion().getFriendlyString())
-                .orElse("0.0.0");
+        return FabricLoader.getInstance().getModContainer("stackplus")
+                .map(container -> container.getMetadata().getVersion().getFriendlyString()).orElse("0.0.0");
     }
 
-    private static void sendUpdateMessage(MinecraftClient client, ModrinthUpdate update) {
-        ClientPlayerEntity player = client.player;
-        if (player == null || !StackLimitConfig.isUpdateNotificationsEnabled()) {
+    private static String getCurrentGameVersion() {
+        return SharedConstants.getGameVersion().getName();
+    }
+
+    private static void flushPendingUpdate(MinecraftClient client) {
+        UpdateNotice update = pendingUpdate;
+        if (update == null || client.player == null || !StackLimitConfig.isUpdateNotificationsEnabled()) {
             return;
         }
-
-        MutableText versionLink = Text.literal("Ver" + update.versionNumber())
-                .styled(style -> style.withColor(Formatting.AQUA)
-                        .withUnderline(true)
-                        .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, MODRINTH_PROJECT_URL)));
-        player.sendMessage(versionLink.append(Text.translatable("chat.stackplus.update.released")), false);
-        player.sendMessage(Text.translatable("chat.stackplus.update.changelog_title"), false);
-
-        List<String> changelogLines = extractChangelogLines(update.changelog());
-        if (changelogLines.isEmpty()) {
-            player.sendMessage(Text.translatable("chat.stackplus.update.changelog_empty"), false);
-        } else {
-            for (String changelogLine : changelogLines) {
-                player.sendMessage(Text.literal("  - " + changelogLine).formatted(Formatting.GRAY), false);
-            }
-        }
-
-        player.sendMessage(Text.translatable("chat.stackplus.update.disable_hint").formatted(Formatting.YELLOW), false);
+        pendingUpdate = null;
+        sendUpdateMessage(client, update);
+        StackLimitConfig.setLastNotifiedReleaseVersion(getCurrentGameVersion(), update.releaseVersion());
     }
 
-    private static List<String> extractChangelogLines(String changelog) {
-        List<String> lines = new ArrayList<>();
-        if (changelog == null || changelog.isBlank()) {
-            return lines;
-        }
+    private static void sendUpdateMessage(MinecraftClient client, UpdateNotice update) {
+        MutableText message = Text.translatable("chat.stackplus.update.prefix").formatted(Formatting.GOLD)
+                .append(Text.translatable("chat.stackplus.update.version", update.releaseVersion()).formatted(Formatting.GOLD))
+                .append(Text.translatable("chat.stackplus.update.released").formatted(Formatting.GOLD));
+        addChatMessage(client, message);
 
-        for (String rawLine : changelog.split("\\R")) {
-            String line = rawLine.strip();
-            if (line.isEmpty() || line.startsWith("#")) {
-                continue;
-            }
-            line = stripMarkdownBullet(line);
-            if (!line.isBlank()) {
-                lines.add(line);
-            }
-            if (lines.size() >= MAX_CHANGELOG_LINES) {
-                break;
-            }
-        }
-        return lines;
+        MutableText links = Text.empty();
+        links.append(Text.translatable("chat.stackplus.update.download").styled(style -> style.withColor(Formatting.YELLOW)
+                .withUnderline(true).withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, MODRINTH_PAGE_URL))));
+        links.append(Text.literal(" / "));
+        links.append(Text.translatable("chat.stackplus.update.release_note").styled(style -> style.withColor(Formatting.AQUA)
+                .withUnderline(true).withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, RELEASE_NOTE_URL))));
+        addChatMessage(client, links);
+        addChatMessage(client, Text.translatable("chat.stackplus.update.disable_hint").formatted(Formatting.GRAY));
     }
 
-    private static String stripMarkdownBullet(String line) {
-        if (line.startsWith("- ") || line.startsWith("* ")) {
-            return line.substring(2).strip();
+    private static void addChatMessage(MinecraftClient client, Text message) {
+        if (client.player != null) {
+            client.player.sendMessage(message, false);
         }
-        return line;
     }
 
     private static String getString(JsonObject object, String key) {
-        JsonElement element = object.get(key);
-        if (element == null || element.isJsonNull()) {
-            return "";
-        }
-        return element.getAsString();
+        JsonElement element = object == null ? null : object.get(key);
+        return element == null || element.isJsonNull() ? "" : element.getAsString();
     }
 
     private static int compareVersions(String left, String right) {
@@ -188,20 +155,13 @@ public final class StackPlusUpdateNotifier {
 
     private static String normalizeVersion(String version) {
         String normalized = version.strip();
-        if (normalized.startsWith("v") || normalized.startsWith("V")) {
-            return normalized.substring(1);
-        }
-        return normalized;
+        return normalized.startsWith("v") || normalized.startsWith("V") ? normalized.substring(1) : normalized;
     }
 
     private static int parseVersionPart(String part) {
         StringBuilder digits = new StringBuilder();
-        for (int index = 0; index < part.length(); index++) {
-            char character = part.charAt(index);
-            if (!Character.isDigit(character)) {
-                break;
-            }
-            digits.append(character);
+        for (int index = 0; index < part.length() && Character.isDigit(part.charAt(index)); index++) {
+            digits.append(part.charAt(index));
         }
         if (digits.isEmpty()) {
             return 0;
@@ -213,6 +173,6 @@ public final class StackPlusUpdateNotifier {
         }
     }
 
-    private record ModrinthUpdate(String versionNumber, String changelog) {
+    private record UpdateNotice(String releaseVersion) {
     }
 }
