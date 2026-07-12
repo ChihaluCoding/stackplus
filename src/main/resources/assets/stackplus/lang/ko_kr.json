@@ -1,4 +1,4 @@
-﻿{
+{
   "button.stackplus.back": "뒤로",
   "button.stackplus.add_preset": "추가",
   "button.stackplus.cancel": "취소",
@@ -56,8 +56,29 @@
   "screen.stackplus.item_selection.selected_title": "선택된 아이템",
   "screen.stackplus.item_selection.title": "아이템별 제한",
   "screen.stackplus.item_selection.value": "클릭해서 %s로 설정 / Shift+클릭으로 여러 개 선택",
-  "screen.stackplus.config.selected_item_count_position": "아이템 수량 위치: %s",
+  "screen.stackplus.config.selected_item_count_color": "아이템 수 표시 색상: %s",
+  "screen.stackplus.config.selected_item_count_color.white": "흰색",
+  "screen.stackplus.config.selected_item_count_color.yellow": "노란색",
+  "screen.stackplus.config.selected_item_count_color.aqua": "하늘색",
+  "screen.stackplus.config.selected_item_count_color.green": "초록색",
+  "screen.stackplus.config.selected_item_count_color.light_purple": "연보라색",
+  "screen.stackplus.item_selection.configured_only": "설정된 항목만: %s",
+  "screen.stackplus.item_selection.configured_only.on": "켜짐",
+  "screen.stackplus.item_selection.configured_only.off": "꺼짐",
+  "screen.stackplus.item_selection.stacking_forbidden": "스택: %s",
+  "screen.stackplus.item_selection.stacking_forbidden.on": "금지",
+  "screen.stackplus.item_selection.stacking_forbidden.off": "허용",
+  "screen.stackplus.color_picker.title": "아이템 수 글자 색상 선택",
+  "screen.stackplus.color_picker.hint": "색상 원을 클릭하여 선택",
+  "screen.stackplus.item_selection.sort.creative": "크리에이티브",
+  "tooltip.stackplus.count": "개수: %s",
+  "tooltip.stackplus.count.compact": "개수: %s (%s)",
+  "screen.stackplus.config.selected_item_count_position": "아이템 수 표시 위치: %s",
   "screen.stackplus.config.selected_item_count_position.beside": "오른쪽",
   "screen.stackplus.config.selected_item_count_position.below": "아래",
-  "tooltip.stackplus.count": "개수: %s"
+  "screen.stackplus.item_selection.world_required": "월드에 한 번 들어가면 아이템이 표시됩니다",
+  "screen.stackplus.durability_warning.title": "내구도가 있는 아이템 확인",
+  "screen.stackplus.durability_warning.line1": "스택에 있는 모든 아이템의 내구도가 감소합니다.",
+  "screen.stackplus.durability_warning.line2": "이 동작을 이해한 경우에만 허용하세요.",
+  "screen.stackplus.durability_warning.suppress": "다시 표시하지 않기"
 }
