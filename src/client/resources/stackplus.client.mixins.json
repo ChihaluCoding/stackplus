@@ -8,8 +8,6 @@
 		"CreativeInventoryActionC2SPacketMixin",
 		"GuiGraphicsExtractorMixin",
 		"InGameHudSelectedItemNameMixin",
-		"ItemClientMixin",
-		"ItemStackClientMixin",
 		"ItemStackTooltipMixin"
 	],
 	"injectors": {

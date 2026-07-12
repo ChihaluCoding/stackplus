@@ -39,10 +39,10 @@ public final class StackPlusIssueReportCommand {
             sendMessage(source, "StackPlus issue report exported.");
             sendMessage(source, "Saved to: " + REPORT_DISPLAY_PATH);
             sendMessage(source, "Please attach it to your GitHub issue.");
-            CustomStackLimit.LOGGER.info("StackPlus issue report exported: {}", reportPath);
+            StackPlus.LOGGER.info("StackPlus issue report exported: {}", reportPath);
             return 1;
         } catch (IOException exception) {
-            CustomStackLimit.LOGGER.warn("Failed to export the StackPlus issue report", exception);
+            StackPlus.LOGGER.warn("Failed to export the StackPlus issue report", exception);
             sendMessage(source, "Failed to export the StackPlus issue report. Check the log for details.");
             return 0;
         }

@@ -8,7 +8,6 @@ import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -85,7 +84,8 @@ public class InGameHudSelectedItemNameMixin {
 
         return Text.empty()
                 .append(itemName)
-                .append(Text.literal(" x" + StackCountFormatter.formatExact(currentStack.getCount())));
+                .append(Text.literal(" x" + StackCountFormatter.formatExact(currentStack.getCount()))
+                        .styled(style -> style.withColor(StackLimitConfig.getSelectedItemCountColorRgb())));
     }
 
     @Inject(method = "renderHeldItemTooltip", at = @At("TAIL"))
@@ -114,7 +114,7 @@ public class InGameHudSelectedItemNameMixin {
 
         int alpha = mode.keepsVisible() ? 255 : (heldItemTooltipFade > 15 ? 255 : heldItemTooltipFade * 17);
         if (alpha < 0) alpha = 0;
-        int color = (alpha << 24) | 0xFFFFFF;
+        int color = (alpha << 24) | StackLimitConfig.getSelectedItemCountColorRgb();
         MutableText countText = Text.literal("x" + StackCountFormatter.formatExact(selectedStack.getCount()));
         context.drawCenteredTextWithShadow(client.textRenderer, countText, screenWidth / 2, y, color);
     }
