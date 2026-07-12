@@ -4,7 +4,7 @@ Break Minecraft's usual stack limit and carry up to **1,000,000,000 items in a s
 
 StackPlus also keeps huge counts readable, provides per-item rules, and puts every setting in an in-game configuration screen.
 
-## What You Can Do
+## Features
 
 | Feature | Details |
 | --- | --- |
