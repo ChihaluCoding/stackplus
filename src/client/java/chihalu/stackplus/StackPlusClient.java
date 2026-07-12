@@ -6,8 +6,8 @@ import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CustomStackLimitClient implements ClientModInitializer {
-	public static final Logger LOGGER = LoggerFactory.getLogger(CustomStackLimit.MOD_ID);
+public class StackPlusClient implements ClientModInitializer {
+	public static final Logger LOGGER = LoggerFactory.getLogger(StackPlus.MOD_ID);
 	
 	@Override
 	public void onInitializeClient() {
@@ -15,6 +15,6 @@ public class CustomStackLimitClient implements ClientModInitializer {
 		StackPlusIssueReportCommand.register();
 		StackPlusUpdateNotifier.register();
 		LOGGER.info("StackPlus クライアントが初期化されました");
-		LOGGER.info("CustomStackLimit: 通常アイテムのスタック数が{}個に設定されました", StackLimitConfig.getStackLimit());
+		LOGGER.info("StackPlus: 通常アイテムのスタック数が{}個に設定されました", StackLimitConfig.getStackLimit());
 	}
 }

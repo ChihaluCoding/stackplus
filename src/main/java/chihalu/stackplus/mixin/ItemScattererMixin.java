@@ -25,12 +25,14 @@ public class ItemScattererMixin {
             return;
         }
 
-        spawnSingleLargeStack(world, x, y, z, stack.copy());
-        stack.setCount(0);
-        ci.cancel();
+        ItemStack droppedStack = chihalu.stackplus.StackLimitConfig.clampStackCount(stack).copy();
+        if (spawnSingleLargeStack(world, x, y, z, droppedStack)) {
+            stack.setCount(0);
+            ci.cancel();
+        }
     }
 
-    private static void spawnSingleLargeStack(World world, double x, double y, double z, ItemStack stack) {
+    private static boolean spawnSingleLargeStack(World world, double x, double y, double z, ItemStack stack) {
         double entityWidth = EntityType.ITEM.getWidth();
         double positionRange = 1.0D - entityWidth;
         double positionOffset = entityWidth / 2.0D;
@@ -45,6 +47,6 @@ public class ItemScattererMixin {
                 random.nextTriangular(0.2D, ITEM_ENTITY_SPREAD_VELOCITY),
                 random.nextTriangular(0.0D, ITEM_ENTITY_SPREAD_VELOCITY)
         );
-        world.spawnEntity(itemEntity);
+        return world.spawnEntity(itemEntity);
     }
 }

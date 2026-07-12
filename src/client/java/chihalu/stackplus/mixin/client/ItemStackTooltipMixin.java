@@ -27,7 +27,10 @@ public class ItemStackTooltipMixin {
             return;
         }
 
-        cir.getReturnValue().add(Text.translatable("tooltip.stackplus.count", StackCountFormatter.formatExact(stack.getCount())).formatted(Formatting.GRAY));
+        Text countLine = stack.getCount() >= 1_000
+                ? Text.translatable("tooltip.stackplus.count.compact", StackCountFormatter.formatExact(stack.getCount()), StackCountFormatter.formatCompact(stack.getCount()))
+                : Text.translatable("tooltip.stackplus.count", StackCountFormatter.formatExact(stack.getCount()));
+        cir.getReturnValue().add(countLine.copy().formatted(Formatting.GRAY));
     }
 
     private static boolean shouldAppendExactStackCount(int count) {

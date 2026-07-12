@@ -16,9 +16,6 @@ public interface ContainerMixin {
 
     @Inject(method = "getMaxCountPerStack", at = @At("RETURN"), cancellable = true)
     private void customContainerMaxCount(CallbackInfoReturnable<Integer> cir) {
-        if (!StackLimitConfig.areStackRulesEnabled()) {
-            return;
-        }
         cir.setReturnValue(Math.max(cir.getReturnValue(), StackLimitConfig.getStackLimit()));
     }
 
