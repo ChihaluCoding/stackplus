@@ -56,14 +56,14 @@ public final class StackPlusUpdateNotifier {
         HttpRequest request = HttpRequest.newBuilder(buildVersionsUri(gameVersion))
                 .timeout(Duration.ofSeconds(12))
                 .header("Accept", "application/json")
-                .header("User-Agent", "StackPlus/" + currentModVersion + " (https://github.com/ChihaluCoding/CustomStackLimit)")
+                .header("User-Agent", "StackPlus/" + currentModVersion + " (https://github.com/ChihaluCoding/StackPlus)")
                 .GET()
                 .build();
 
         CompletableFuture.supplyAsync(() -> fetchLatestUpdate(request, currentModVersion))
                 .thenAccept(update -> update.ifPresent(value -> client.execute(() -> sendUpdateMessage(client, value))))
                 .exceptionally(exception -> {
-                    CustomStackLimit.LOGGER.warn("StackPlus の更新確認に失敗しました", exception);
+                    StackPlus.LOGGER.warn("StackPlus の更新確認に失敗しました", exception);
                     return null;
                 });
     }
@@ -82,7 +82,7 @@ public final class StackPlusUpdateNotifier {
         try {
             HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                CustomStackLimit.LOGGER.warn("Modrinth API がエラーを返しました: HTTP {}", response.statusCode());
+                StackPlus.LOGGER.warn("Modrinth API がエラーを返しました: HTTP {}", response.statusCode());
                 return Optional.empty();
             }
 
@@ -98,7 +98,7 @@ public final class StackPlusUpdateNotifier {
             if (exception instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            CustomStackLimit.LOGGER.warn("Modrinth API から更新情報を取得できませんでした", exception);
+            StackPlus.LOGGER.warn("Modrinth API から更新情報を取得できませんでした", exception);
         }
         return Optional.empty();
     }

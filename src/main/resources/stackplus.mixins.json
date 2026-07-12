@@ -8,6 +8,7 @@
 		"ItemScattererMixin",
 		"ItemMixin",
 		"ItemStackMixin",
+		"ItemStackStackableMixin",
 		"SlotMixin"
 	],
 	"injectors": {

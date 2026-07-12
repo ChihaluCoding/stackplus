@@ -16,10 +16,11 @@ public class SlotMixin {
 
     @Inject(method = "getMaxItemCount", at = @At("RETURN"), cancellable = true)
     private void customSlotMaxCount(CallbackInfoReturnable<Integer> cir) {
-        if (!StackLimitConfig.areStackRulesEnabled()) {
+        int original = cir.getReturnValue();
+        if (original <= 1) {
             return;
         }
-        cir.setReturnValue(Math.max(cir.getReturnValue(), StackLimitConfig.getStackLimit()));
+        cir.setReturnValue(Math.max(original, StackLimitConfig.getStackLimit()));
     }
 
     @Inject(method = "getMaxItemCount(Lnet/minecraft/item/ItemStack;)I", at = @At("RETURN"), cancellable = true)
