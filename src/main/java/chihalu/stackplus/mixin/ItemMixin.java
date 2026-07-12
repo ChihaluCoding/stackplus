@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class ItemMixin {
 
     /**
-     * 元の上限が1個のアイテムは、バンドルや装備系を含めてスタック不可のまま維持します。
+     * 元の上限が1個のアイテムは、明示的な個別設定がない限りスタック不可のまま維持します。
      */
     @Inject(method = "getMaxCount", at = @At("RETURN"), cancellable = true)
     private void customMaxCount(CallbackInfoReturnable<Integer> cir) {

@@ -1,4 +1,4 @@
-﻿{
+{
   "button.stackplus.back": "Zurück",
   "button.stackplus.add_preset": "Hinzufügen",
   "button.stackplus.cancel": "Abbrechen",
@@ -56,8 +56,29 @@
   "screen.stackplus.item_selection.selected_title": "Ausgewähltes Item",
   "screen.stackplus.item_selection.title": "Itemspezifische Limits",
   "screen.stackplus.item_selection.value": "Klicken für %s / Umschalt-Klick für Mehrfachauswahl",
-  "screen.stackplus.config.selected_item_count_position": "Position der Gegenstandsanzahl: %s",
-  "screen.stackplus.config.selected_item_count_position.beside": "Rechts",
+  "screen.stackplus.config.selected_item_count_color": "Farbe der Gegenstandszahl: %s",
+  "screen.stackplus.config.selected_item_count_color.white": "Weiß",
+  "screen.stackplus.config.selected_item_count_color.yellow": "Gelb",
+  "screen.stackplus.config.selected_item_count_color.aqua": "Aquamarin",
+  "screen.stackplus.config.selected_item_count_color.green": "Grün",
+  "screen.stackplus.config.selected_item_count_color.light_purple": "Hellviolett",
+  "screen.stackplus.item_selection.configured_only": "Nur konfigurierte: %s",
+  "screen.stackplus.item_selection.configured_only.on": "Ein",
+  "screen.stackplus.item_selection.configured_only.off": "Aus",
+  "screen.stackplus.item_selection.stacking_forbidden": "Stapeln: %s",
+  "screen.stackplus.item_selection.stacking_forbidden.on": "Verboten",
+  "screen.stackplus.item_selection.stacking_forbidden.off": "Erlaubt",
+  "screen.stackplus.color_picker.title": "Farbe der Gegenstandszahl wählen",
+  "screen.stackplus.color_picker.hint": "Klicke auf eine Farbe im Kreis",
+  "screen.stackplus.item_selection.sort.creative": "Kreativ",
+  "tooltip.stackplus.count": "Anzahl: %s",
+  "tooltip.stackplus.count.compact": "Anzahl: %s (%s)",
+  "screen.stackplus.config.selected_item_count_position": "Position der Gegenstandszahl: %s",
+  "screen.stackplus.config.selected_item_count_position.beside": "Rechts daneben",
   "screen.stackplus.config.selected_item_count_position.below": "Darunter",
-  "tooltip.stackplus.count": "Anzahl: %s"
+  "screen.stackplus.item_selection.world_required": "Die Gegenstände werden angezeigt, nachdem du eine Welt betreten hast",
+  "screen.stackplus.durability_warning.title": "Warnung für Gegenstände mit Haltbarkeit",
+  "screen.stackplus.durability_warning.line1": "Die Haltbarkeit aller Gegenstände im Stapel nimmt ab.",
+  "screen.stackplus.durability_warning.line2": "Aktiviere dies nur, wenn du dieses Verhalten verstanden hast.",
+  "screen.stackplus.durability_warning.suppress": "Nicht mehr anzeigen"
 }
