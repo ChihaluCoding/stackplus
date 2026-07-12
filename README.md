@@ -1,67 +1,47 @@
 # StackPlus
 
-StackPlus は、Minecraft のアイテム最大スタック数をまとめて変更できる Fabric 用 mod です。
-Mod Menu から 64、999、1K、10K、32K、1M、100M、1B のプリセットを選ぶか、好きな値を直接入力できます。
+Break Minecraft's usual stack limit and carry up to **1,000,000,000 items in a single stack**.
 
-## Why StackPlus?
+StackPlus also keeps huge counts readable, provides per-item rules, and puts every setting in an in-game configuration screen.
 
-- 最大スタック数を `1` から `1,000,000,000` まで設定できます。
-- Mod Menu からゲーム内で設定できます。
-- `K/M/B` 表示と `99+` 表示を切り替えられます。
-- 耐久値を持つアイテムは vanilla 仕様どおりスタック不可のままにします。
-- ベッド、ポーション、バケツ、ボート、トーテム、音楽ディスクなど、通常 1 個スタックの一部アイテムにも対応します。
-- ホッパーやインベントリ周りのスタック制限にも対応します。
-- 日本語と英語に対応しています。
+## Features
 
-## Recommended Use
+| Feature | Details |
+| --- | --- |
+| Global stack limit | Choose any value from **1** to **1,000,000,000**. |
+| Quick presets | Switch between common limits or save your own presets. |
+| Per-item rules | Allow or disable stacking and assign a separate limit to each item. |
+| Compact numbers | Display large counts using **K**, **M**, **B**, or **99+**. |
+| Exact tooltip count | See the full amount alongside its abbreviated value. |
+| Total count above the hotbar | Show the total number of the selected item across your inventory above the hotbar. |
+| Display customization | Change the counter position, visibility, and text color. |
+| Update notifications | Enable or disable update notices from the settings screen. |
 
-普段使いには `999`、`1K`、`10K`、`32K` をおすすめします。
-より大きな値を使いたい場合は、`1M`、`100M`、`1B` のプリセットも選べます。
-
-## Supported Version
-
-- Minecraft: `1.21.x`
-- Loader: Fabric
-- Optional: Mod Menu
+Damageable equipment, including tools, weapons, armor, and shields, follows vanilla behavior and remains unstackable by default.
 
 ## Configuration
 
-Mod Menu がある場合は、`Mods > StackPlus > Configure` から設定できます。
-Mod Menu がない場合は、既定値 `1K` が使用されます。
+[Mod Menu](https://modrinth.com/mod/modmenu) is required for all non-snapshot versions. It provides access to every in-game setting, including exact limits, presets, count formatting, and item-specific rules.
 
-設定ファイル:
+Snapshot versions can run without Mod Menu. In that case, the maximum stack size remains at the default value of **1,000**.
 
-```text
-config/stackplus.properties
-```
+## In Game
 
-主な設定:
+<table>
+  <tr>
+    <td><img src="https://raw.githubusercontent.com/ChihaluCoding/stackplus/main/imges/1.png" alt="StackPlus settings"></td>
+    <td><img src="https://raw.githubusercontent.com/ChihaluCoding/stackplus/main/imges/2.png" alt="Item-specific stack limits"></td>
+  </tr>
+  <tr>
+    <td><img src="https://raw.githubusercontent.com/ChihaluCoding/stackplus/main/imges/3.png" alt="Large item stacks in a chest"></td>
+    <td><img src="https://raw.githubusercontent.com/ChihaluCoding/stackplus/main/imges/4.png" alt="Exact item count in a tooltip"></td>
+  </tr>
+  <tr>
+    <td><img src="https://raw.githubusercontent.com/ChihaluCoding/stackplus/main/imges/5.png" alt="Selected item count above the hotbar"></td>
+    <td><img src="https://raw.githubusercontent.com/ChihaluCoding/stackplus/main/imges/6.png" alt="Item count color picker"></td>
+  </tr>
+</table>
 
-```properties
-stackLimit=1000
-displayMode=compact
-```
+## Support
 
-`displayMode` は `compact` または `99plus` を指定できます。
-
-## Notes
-
-- 上限を下げても、すでに存在する大きなスタックは自動分割されません。
-- 壊れた設定ファイルは `.broken` として退避し、既定値で起動します。
-- とても大きなスタック数を使う場合は、他 mod との組み合わせを確認しながら調整してください。
-
-## Build
-
-```bat
-gradlew.bat clean build
-```
-
-生成物:
-
-```text
-build/libs/stackplus-1.21.x-2.6.0.jar
-```
-
-## Publishing Keywords
-
-stack size, bigger stacks, inventory, storage, quality of life, QoL, fabric, mod menu, Minecraft 26.2, stack limit
+Found a bug or unexpected behavior? Open a [GitHub issue](../../issues) with the Minecraft version, StackPlus version, and steps to reproduce it.
