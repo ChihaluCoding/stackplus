@@ -1,4 +1,4 @@
-﻿{
+{
   "button.stackplus.back": "返回",
   "button.stackplus.add_preset": "新增",
   "button.stackplus.cancel": "取消",
@@ -56,8 +56,29 @@
   "screen.stackplus.item_selection.selected_title": "已選物品",
   "screen.stackplus.item_selection.title": "依物品設定",
   "screen.stackplus.item_selection.value": "點擊設為 %s / Shift 點擊可多選",
+  "screen.stackplus.config.selected_item_count_color": "物品數量文字顏色：%s",
+  "screen.stackplus.config.selected_item_count_color.white": "白色",
+  "screen.stackplus.config.selected_item_count_color.yellow": "黃色",
+  "screen.stackplus.config.selected_item_count_color.aqua": "青色",
+  "screen.stackplus.config.selected_item_count_color.green": "綠色",
+  "screen.stackplus.config.selected_item_count_color.light_purple": "淡紫色",
+  "screen.stackplus.item_selection.configured_only": "僅顯示已設定：%s",
+  "screen.stackplus.item_selection.configured_only.on": "開",
+  "screen.stackplus.item_selection.configured_only.off": "關",
+  "screen.stackplus.item_selection.stacking_forbidden": "堆疊：%s",
+  "screen.stackplus.item_selection.stacking_forbidden.on": "禁止",
+  "screen.stackplus.item_selection.stacking_forbidden.off": "允許",
+  "screen.stackplus.color_picker.title": "選擇物品數量顏色",
+  "screen.stackplus.color_picker.hint": "點擊色環中的顏色",
+  "screen.stackplus.item_selection.sort.creative": "創造",
+  "tooltip.stackplus.count": "數量：%s",
+  "tooltip.stackplus.count.compact": "數量：%s（%s）",
   "screen.stackplus.config.selected_item_count_position": "物品數量位置：%s",
   "screen.stackplus.config.selected_item_count_position.beside": "右側",
   "screen.stackplus.config.selected_item_count_position.below": "下方",
-  "tooltip.stackplus.count": "數量：%s"
+  "screen.stackplus.item_selection.world_required": "進入一次世界後才會顯示物品",
+  "screen.stackplus.durability_warning.title": "耐久度物品警告",
+  "screen.stackplus.durability_warning.line1": "堆疊中所有物品的耐久度都會降低。",
+  "screen.stackplus.durability_warning.line2": "了解此行為後再啟用。",
+  "screen.stackplus.durability_warning.suppress": "不再顯示"
 }

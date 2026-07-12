@@ -1,6 +1,6 @@
 package chihalu.stackplus.mixin.client;
 
-import chihalu.stackplus.CustomStackLimit;
+import chihalu.stackplus.StackPlus;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import net.minecraft.client.MinecraftClient;
@@ -32,7 +32,7 @@ public class CreativeInventoryListenerMixin {
     private void stackplus$skipInvalidCreativeSlot(ScreenHandler handler, int slotId, ItemStack stack, CallbackInfo ci) {
         if (!canEncodeCreativeSlot(slotId, stack)) {
             if (warningCount < MAX_WARNINGS) {
-                CustomStackLimit.LOGGER.warn("StackPlus: デコード不能なクリエイティブスロット同期をスキップしました。slot={}, item={}, count={}",
+                StackPlus.LOGGER.warn("StackPlus: デコード不能なクリエイティブスロット同期をスキップしました。slot={}, item={}, count={}",
                         slotId, stack.getItem(), stack.getCount());
                 warningCount++;
             }

@@ -9,6 +9,10 @@ public final class StackLimitMathTest {
         assertEquals(128, StackLimitMath.effectiveStackLimit(true, 64, 128, 100));
         assertEquals(150, StackLimitMath.effectiveStackLimit(true, 64, 128, 150));
         assertEquals(64, StackLimitMath.effectiveStackLimit(false, 64, 64, 150));
+        assertEquals("999", StackCountFormatter.formatCompact(999));
+        assertEquals("1K", StackCountFormatter.formatCompact(1_000));
+        assertEquals("1M", StackCountFormatter.formatCompact(1_000_000));
+        assertEquals("1B", StackCountFormatter.formatCompact(1_000_000_000));
 
         Path gameDirectory = Path.of("minecraft");
         assertEquals(gameDirectory.resolve("stackplus").resolve("stackplus-issue-report.txt"),
@@ -22,6 +26,12 @@ public final class StackLimitMathTest {
     }
 
     private static void assertEquals(Path expected, Path actual) {
+        if (!expected.equals(actual)) {
+            throw new AssertionError("expected=" + expected + ", actual=" + actual);
+        }
+    }
+
+    private static void assertEquals(String expected, String actual) {
         if (!expected.equals(actual)) {
             throw new AssertionError("expected=" + expected + ", actual=" + actual);
         }
