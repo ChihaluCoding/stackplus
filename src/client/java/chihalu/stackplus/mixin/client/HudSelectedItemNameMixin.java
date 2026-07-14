@@ -2,6 +2,7 @@ package chihalu.stackplus.mixin.client;
 
 import chihalu.stackplus.StackCountFormatter;
 import chihalu.stackplus.StackLimitConfig;
+import chihalu.stackplus.client.StackPlusFontSupport;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.Hud;
@@ -76,8 +77,10 @@ public class HudSelectedItemNameMixin {
 
         return Component.empty()
                 .append(itemName)
-                .append(Component.literal(" x" + StackCountFormatter.formatExact(lastToolHighlight.getCount()))
-                        .withColor(StackLimitConfig.getSelectedItemCountColorRgb()));
+                .append(StackPlusFontSupport.apply(
+                        Component.literal(" x" + StackCountFormatter.formatExact(lastToolHighlight.getCount()))
+                                .withColor(StackLimitConfig.getSelectedItemCountColorRgb()),
+                        StackLimitConfig.getSelectedItemCountFont()));
     }
 
     @Inject(method = "extractSelectedItemName", at = @At("TAIL"))
@@ -107,7 +110,9 @@ public class HudSelectedItemNameMixin {
         int alpha = mode.keepsVisible() ? 255 : (toolHighlightTimer > 15 ? 255 : toolHighlightTimer * 17);
         if (alpha < 0) alpha = 0;
         int color = (alpha << 24) | StackLimitConfig.getSelectedItemCountColorRgb();
-        MutableComponent countText = Component.literal("x" + StackCountFormatter.formatExact(selectedStack.getCount()));
+        Component countText = StackPlusFontSupport.apply(
+                Component.literal("x" + StackCountFormatter.formatExact(selectedStack.getCount())),
+                StackLimitConfig.getSelectedItemCountFont());
         graphics.centeredText(client.font, countText, screenWidth / 2, y, color);
     }
 }

@@ -1,0 +1,14 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "stackplus:jetbrains_mono_extra_bold.ttf",
+      "size": 11,
+      "oversample": 2
+    },
+    {
+      "type": "reference",
+      "id": "minecraft:default"
+    }
+  ]
+}

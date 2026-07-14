@@ -7,6 +7,7 @@ import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -114,9 +115,11 @@ public class StackPlusConfigScreen extends Screen {
 
         this.stackLimitSlider = new StackLimitSlider(left, layout.sliderY(), sliderWidth, 20, pendingStackLimit,
                 value -> setPendingStackLimit(value, false, true));
+        this.stackLimitSlider.setTooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.stack_limit")));
         addRenderableWidget(this.stackLimitSlider);
 
         this.stackLimitInput = new EditBox(this.font, left + sliderWidth + CONTROL_GAP, layout.sliderY(), INPUT_WIDTH, 20, stackLimitText(pendingStackLimit));
+        this.stackLimitInput.setTooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.stack_limit")));
         this.stackLimitInput.setMaxLength(14);
         this.stackLimitInput.setResponder(this::onStackLimitInputChanged);
         setStackLimitInputText(pendingStackLimit);
@@ -128,6 +131,7 @@ public class StackPlusConfigScreen extends Screen {
                     pendingDisplayMode = pendingDisplayMode.next();
                     button.setMessage(displayModeText(pendingDisplayMode));
                 })
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.display_mode")))
                 .bounds(left, layout.displayModeY(), secondaryButtonWidth, 20)
                 .build();
         addRenderableWidget(this.displayModeButton);
@@ -136,6 +140,7 @@ public class StackPlusConfigScreen extends Screen {
                     syncPendingStackLimitFromInput();
                     StackPlusItemSelection.start(this, pendingStackLimit);
                 })
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.item_limits")))
                 .bounds(left + secondaryButtonWidth + CONTROL_GAP, layout.displayModeY(), secondaryButtonWidth, 20)
                 .build());
 
@@ -143,6 +148,7 @@ public class StackPlusConfigScreen extends Screen {
                     pendingSelectedItemCountMode = pendingSelectedItemCountMode.next();
                     button.setMessage(selectedItemCountModeText(pendingSelectedItemCountMode));
                 })
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.selected_item_count")))
                 .bounds(left, layout.displayDescriptionY(), secondaryButtonWidth, 20)
                 .build();
         addRenderableWidget(this.selectedItemCountButton);
@@ -151,6 +157,7 @@ public class StackPlusConfigScreen extends Screen {
                     pendingUpdateNotificationsEnabled = !pendingUpdateNotificationsEnabled;
                     button.setMessage(updateNotificationsText(pendingUpdateNotificationsEnabled));
                 })
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.update_notifications")))
                 .bounds(left + secondaryButtonWidth + CONTROL_GAP, layout.displayDescriptionY(), secondaryButtonWidth, 20)
                 .build();
         addRenderableWidget(this.updateNotificationsButton);
@@ -159,6 +166,7 @@ public class StackPlusConfigScreen extends Screen {
                     pendingSelectedItemCountPosition = pendingSelectedItemCountPosition.next();
                     button.setMessage(selectedItemCountPositionText(pendingSelectedItemCountPosition));
                 })
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.selected_item_count_position")))
                 .bounds(left, layout.updateNotificationsY(), secondaryButtonWidth, 20)
                 .build();
         addRenderableWidget(this.selectedItemCountPositionButton);
@@ -168,20 +176,30 @@ public class StackPlusConfigScreen extends Screen {
                     StackLimitConfig.saveStackLimitPresetsVisible(pendingStackLimitPresetsVisible);
                     rebuildWidgets();
                 })
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.preset_visibility")))
                 .bounds(left + secondaryButtonWidth + CONTROL_GAP, layout.updateNotificationsY(), secondaryButtonWidth, 20)
                 .build());
 
         this.selectedItemCountColorButton = Button.builder(selectedItemCountColorText(pendingSelectedItemCountColorRgb), button ->
                     StackPlusColorPickerScreen.open(this, pendingSelectedItemCountColorRgb, this::setPendingSelectedItemCountColorRgb))
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.selected_item_count_color")))
                 .bounds(left, layout.updateNotificationsY() + 24, secondaryButtonWidth, 20)
                 .build();
         addRenderableWidget(this.selectedItemCountColorButton);
 
+        addRenderableWidget(Button.builder(Component.translatable("button.stackplus.font_settings"), button ->
+                    Minecraft.getInstance().setScreenAndShow(new StackPlusFontConfigScreen(this)))
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.font_settings")))
+                .bounds(left + secondaryButtonWidth + CONTROL_GAP, layout.updateNotificationsY() + 24, secondaryButtonWidth, 20)
+                .build());
+
         int firstButtonX = centerX - (ACTION_BUTTON_WIDTH * 2 + ACTION_BUTTON_GAP) / 2;
         addRenderableWidget(Button.builder(Component.translatable("button.stackplus.save"), button -> save())
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.settings.save")))
                 .bounds(firstButtonX, layout.actionButtonY(), ACTION_BUTTON_WIDTH, 20)
                 .build());
         addRenderableWidget(Button.builder(Component.translatable("button.stackplus.back"), button -> onClose())
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.settings.back")))
                 .bounds(firstButtonX + ACTION_BUTTON_WIDTH + ACTION_BUTTON_GAP, layout.actionButtonY(), ACTION_BUTTON_WIDTH, 20)
                 .build());
     }
@@ -288,9 +306,11 @@ public class StackPlusConfigScreen extends Screen {
         int editButtonWidth = (buttonWidth - editGap) / 2;
         int removeButtonWidth = buttonWidth - editButtonWidth - editGap;
         addRenderableWidget(Button.builder(Component.translatable("button.stackplus.add_preset"), button -> addCustomPreset())
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.add_preset")))
                 .bounds(firstX, top, editButtonWidth, 20)
                 .build());
         addRenderableWidget(Button.builder(Component.translatable("button.stackplus.remove_preset"), button -> removeCustomPreset())
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.remove_preset")))
                 .bounds(firstX + editButtonWidth + editGap, top, removeButtonWidth, 20)
                 .build());
     }
@@ -333,6 +353,7 @@ public class StackPlusConfigScreen extends Screen {
                     presetPage = Math.max(0, presetPage - 1);
                     rebuildWidgets();
                 })
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.previous_page")))
                 .bounds(left, presetLabelY - 6, 24, 20)
                 .build();
         previousButton.active = page > 0;
@@ -342,6 +363,7 @@ public class StackPlusConfigScreen extends Screen {
                     presetPage = Math.min(pageCount - 1, presetPage + 1);
                     rebuildWidgets();
                 })
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.next_page")))
                 .bounds(left + 30, presetLabelY - 6, 24, 20)
                 .build();
         nextButton.active = page + 1 < pageCount;
@@ -354,6 +376,7 @@ public class StackPlusConfigScreen extends Screen {
         int x = left + column * (buttonWidth + gap);
         int y = presetY + row * 22;
         addRenderableWidget(Button.builder(message, button -> setPendingStackLimit(presetValue, true, true))
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.preset")))
                 .bounds(x, y, buttonWidth, 20)
                 .build());
     }
