@@ -1,6 +1,8 @@
 package chihalu.stackplus.mixin.client;
 
 import chihalu.stackplus.StackCountFormatter;
+import chihalu.stackplus.StackLimitConfig;
+import chihalu.stackplus.client.StackPlusFontSupport;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -30,7 +32,8 @@ public class ItemStackTooltipMixin {
         Text countLine = stack.getCount() >= 1_000
                 ? Text.translatable("tooltip.stackplus.count.compact", StackCountFormatter.formatExact(stack.getCount()), StackCountFormatter.formatCompact(stack.getCount()))
                 : Text.translatable("tooltip.stackplus.count", StackCountFormatter.formatExact(stack.getCount()));
-        cir.getReturnValue().add(countLine.copy().formatted(Formatting.GRAY));
+        cir.getReturnValue().add(StackPlusFontSupport.apply(
+                countLine.copy().formatted(Formatting.GRAY), StackLimitConfig.getTooltipCountFont()));
     }
 
     private static boolean shouldAppendExactStackCount(int count) {

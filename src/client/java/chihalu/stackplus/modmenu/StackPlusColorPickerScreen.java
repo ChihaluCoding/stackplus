@@ -5,6 +5,7 @@ import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
@@ -15,6 +16,8 @@ import java.util.function.IntConsumer;
 
 /** HSVカラーサークルから選択アイテム数の表示色を選ぶ画面です。 */
 final class StackPlusColorPickerScreen extends Screen {
+    private static final int PANEL_COLOR = 0x80000000;
+    private static final int PANEL_BORDER_COLOR = 0xFFFFFFFF;
     private static final int WHEEL_RADIUS = 64;
     private static final int WHEEL_SIZE = WHEEL_RADIUS * 2 + 1;
     private static final int TEXTURE_SCALE = 4;
@@ -46,11 +49,27 @@ final class StackPlusColorPickerScreen extends Screen {
         int buttonGap = 6;
         int firstButtonX = this.width / 2 - (buttonWidth * 3 + buttonGap * 2) / 2;
         addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.save"), button -> save())
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.color_picker.save")))
                 .dimensions(firstButtonX, buttonY, buttonWidth, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.reset"), button -> resetColor())
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.color_picker.reset")))
                 .dimensions(firstButtonX + buttonWidth + buttonGap, buttonY, buttonWidth, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.back"), button -> close())
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.settings.back")))
                 .dimensions(firstButtonX + (buttonWidth + buttonGap) * 2, buttonY, buttonWidth, 20).build());
+    }
+
+    @Override
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+        super.renderBackground(context, mouseX, mouseY, delta);
+        int centerX = this.width / 2;
+        int centerY = getWheelCenterY();
+        int left = centerX - 120;
+        int top = centerY - WHEEL_RADIUS - 40;
+        int panelWidth = 240;
+        int panelHeight = WHEEL_SIZE + 87;
+        context.fill(left, top, left + panelWidth, top + panelHeight, PANEL_COLOR);
+        drawBorder(context, left, top, panelWidth, panelHeight, PANEL_BORDER_COLOR);
     }
 
     @Override
@@ -111,7 +130,6 @@ final class StackPlusColorPickerScreen extends Screen {
 
     private void save() {
         colorConsumer.accept(selectedColorRgb);
-        close();
     }
 
     private void resetColor() {

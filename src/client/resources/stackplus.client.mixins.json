@@ -8,7 +8,8 @@
 		"CreativeInventoryActionC2SPacketMixin",
 		"GuiGraphicsExtractorMixin",
 		"InGameHudSelectedItemNameMixin",
-		"ItemStackTooltipMixin"
+		"ItemStackTooltipMixin",
+		"MultiPackResourceManagerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
