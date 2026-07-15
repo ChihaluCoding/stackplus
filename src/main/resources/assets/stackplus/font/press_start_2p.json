@@ -1,0 +1,6 @@
+{
+  "providers": [
+    { "type": "ttf", "file": "stackplus:press_start_2p.ttf", "size": 8.2, "oversample": 2 },
+    { "type": "reference", "id": "minecraft:default" }
+  ]
+}
