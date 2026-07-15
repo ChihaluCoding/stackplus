@@ -6,9 +6,12 @@
 		"ClientPlayerInteractionManagerMixin",
 		"CreativeInventoryListenerMixin",
 		"CreativeInventoryActionC2SPacketMixin",
+		"GlyphRendererAccessor",
 		"GuiGraphicsExtractorMixin",
 		"InGameHudSelectedItemNameMixin",
-		"ItemStackTooltipMixin"
+		"ItemStackTooltipMixin",
+		"MultiPackResourceManagerMixin",
+		"TextRendererAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

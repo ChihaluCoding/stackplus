@@ -1,0 +1,15 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "stackplus:font/custom.png",
+      "height": 8,
+      "ascent": 7,
+      "chars": ["0123456789KMBkmbxX+.,-"]
+    },
+    {
+      "type": "reference",
+      "id": "minecraft:default"
+    }
+  ]
+}

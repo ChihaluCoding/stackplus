@@ -2,6 +2,7 @@ package chihalu.stackplus.mixin.client;
 
 import chihalu.stackplus.StackCountFormatter;
 import chihalu.stackplus.StackLimitConfig;
+import chihalu.stackplus.client.StackPlusFontSupport;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
@@ -16,8 +17,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * ホットバー選択時に表示されるアイテム名へ、正確なスタック数を追加します。
- * 設定でアイテム名の横（BESIDE）または下（BELOW）に表示を切り替えられます。
+ * ホットバー選択時に表示されるアイテム名の下へ、正確なスタック数を追加します。
  */
 @Mixin(InGameHud.class)
 public class InGameHudSelectedItemNameMixin {
@@ -69,25 +69,6 @@ public class InGameHudSelectedItemNameMixin {
         return minecraft.player.getMainHandStack();
     }
 
-    @ModifyArg(
-            method = "renderHeldItemTooltip",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/text/MutableText;append(Lnet/minecraft/text/Text;)Lnet/minecraft/text/MutableText;"),
-            index = 0
-    )
-    private Text stackplus$appendExactCountToSelectedItemName(Text itemName) {
-        if (!StackLimitConfig.getSelectedItemCountMode().appendsCountToItemName()
-                || currentStack.isEmpty()
-                || currentStack.getCount() <= 1
-                || StackLimitConfig.getSelectedItemCountPosition().isBelow()) {
-            return itemName;
-        }
-
-        return Text.empty()
-                .append(itemName)
-                .append(Text.literal(" x" + StackCountFormatter.formatExact(currentStack.getCount()))
-                        .styled(style -> style.withColor(StackLimitConfig.getSelectedItemCountColorRgb())));
-    }
-
     @Inject(method = "renderHeldItemTooltip", at = @At("TAIL"))
     private void stackplus$renderPersistentItemCount(DrawContext context, CallbackInfo callbackInfo) {
         StackLimitConfig.SelectedItemCountMode mode = StackLimitConfig.getSelectedItemCountMode();
@@ -99,14 +80,9 @@ public class InGameHudSelectedItemNameMixin {
             return;
         }
 
-        boolean below = StackLimitConfig.getSelectedItemCountPosition().isBelow();
-        if (!below && (!mode.keepsVisible() || heldItemTooltipFade > 0)) {
-            return;
-        }
-
         MinecraftClient client = MinecraftClient.getInstance();
         int screenWidth = client.getWindow().getScaledWidth();
-        int y = client.getWindow().getScaledHeight() - 59 + (below ? STACKPLUS_BELOW_LINE_OFFSET : 0);
+        int y = client.getWindow().getScaledHeight() - 59 + STACKPLUS_BELOW_LINE_OFFSET;
         if (client.interactionManager != null && !client.interactionManager.getCurrentGameMode().isCreative()) {
             y -= 13;
             
@@ -115,7 +91,9 @@ public class InGameHudSelectedItemNameMixin {
         int alpha = mode.keepsVisible() ? 255 : (heldItemTooltipFade > 15 ? 255 : heldItemTooltipFade * 17);
         if (alpha < 0) alpha = 0;
         int color = (alpha << 24) | StackLimitConfig.getSelectedItemCountColorRgb();
-        MutableText countText = Text.literal("x" + StackCountFormatter.formatExact(selectedStack.getCount()));
+        Text countText = StackPlusFontSupport.apply(
+                Text.literal("x" + StackCountFormatter.formatExact(selectedStack.getCount())),
+                StackLimitConfig.getSelectedItemCountFont());
         context.drawCenteredTextWithShadow(client.textRenderer, countText, screenWidth / 2, y, color);
     }
 }
