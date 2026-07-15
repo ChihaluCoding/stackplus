@@ -132,7 +132,6 @@ final class StackPlusColorPickerScreen extends Screen {
 
     private void save() {
         colorConsumer.accept(selectedColorRgb);
-        onClose();
     }
 
     private void resetColor() {

@@ -162,15 +162,6 @@ public class StackPlusConfigScreen extends Screen {
                 .build();
         addRenderableWidget(this.updateNotificationsButton);
 
-        this.selectedItemCountPositionButton = Button.builder(selectedItemCountPositionText(pendingSelectedItemCountPosition), button -> {
-                    pendingSelectedItemCountPosition = pendingSelectedItemCountPosition.next();
-                    button.setMessage(selectedItemCountPositionText(pendingSelectedItemCountPosition));
-                })
-                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.selected_item_count_position")))
-                .bounds(left, layout.updateNotificationsY(), secondaryButtonWidth, 20)
-                .build();
-        addRenderableWidget(this.selectedItemCountPositionButton);
-
         addRenderableWidget(Button.builder(stackLimitPresetsVisibleText(), button -> {
                     pendingStackLimitPresetsVisible = !pendingStackLimitPresetsVisible;
                     StackLimitConfig.saveStackLimitPresetsVisible(pendingStackLimitPresetsVisible);
@@ -183,7 +174,7 @@ public class StackPlusConfigScreen extends Screen {
         this.selectedItemCountColorButton = Button.builder(selectedItemCountColorText(pendingSelectedItemCountColorRgb), button ->
                     StackPlusColorPickerScreen.open(this, pendingSelectedItemCountColorRgb, this::setPendingSelectedItemCountColorRgb))
                 .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.config.selected_item_count_color")))
-                .bounds(left, layout.updateNotificationsY() + 24, secondaryButtonWidth, 20)
+                .bounds(left, layout.updateNotificationsY(), secondaryButtonWidth, 20)
                 .build();
         addRenderableWidget(this.selectedItemCountColorButton);
 

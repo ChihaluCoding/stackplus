@@ -42,7 +42,7 @@ public final class StackPlusFontSupport {
             return component;
         }
         if (honorPriority && StackLimitConfig.getFontPriority() == StackLimitConfig.FontPriority.LOW
-                && (component.getStyle().getFont() != null || hasExternalDefaultFont())) {
+                && (!FontDescription.DEFAULT.equals(component.getStyle().getFont()) || hasExternalDefaultFont())) {
             return component;
         }
         FontDescription description = new FontDescription.Resource(
@@ -56,8 +56,7 @@ public final class StackPlusFontSupport {
             return externalDefaultFontPresent;
         }
         List<Resource> resources = Minecraft.getInstance().getResourceManager().getResourceStack(DEFAULT_FONT_RESOURCE);
-        externalDefaultFontPresent = resources.stream()
-                .anyMatch(resource -> !"vanilla".equals(resource.sourcePackId()));
+        externalDefaultFontPresent = resources.size() > 1;
         nextExternalFontCheck = now + EXTERNAL_FONT_CHECK_INTERVAL_NANOS;
         return externalDefaultFontPresent;
     }

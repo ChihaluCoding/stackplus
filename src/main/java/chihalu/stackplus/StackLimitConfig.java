@@ -387,7 +387,7 @@ public class StackLimitConfig {
     }
 
     public static SelectedItemCountPosition getSelectedItemCountPosition() {
-        return selectedItemCountPosition;
+        return SelectedItemCountPosition.BELOW;
     }
 
     public static void setSelectedItemCountPosition(SelectedItemCountPosition position) {
