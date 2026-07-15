@@ -3,6 +3,7 @@ package chihalu.stackplus.modmenu;
 import chihalu.stackplus.StackLimitConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.screen.Screen;
@@ -106,6 +107,7 @@ public final class StackPlusItemSelection {
             int searchWidth = rightWidth - GRID_PADDING * 2 - SORT_BUTTON_WIDTH - CONFIGURED_FILTER_BUTTON_WIDTH - SEARCH_SORT_GAP * 2;
             this.searchBox = new TextFieldWidget(this.textRenderer, searchLeft, 28, searchWidth, SEARCH_HEIGHT,
                     Text.translatable("screen.stackplus.item_selection.search"));
+            this.searchBox.setTooltip(Tooltip.of(Text.translatable("tooltip.stackplus.item_selection.search")));
             this.searchBox.setMaxLength(80);
             this.searchBox.setText(searchText);
             updateSearchHint();
@@ -121,27 +123,32 @@ public final class StackPlusItemSelection {
                 button.setMessage(Text.literal(sortMode.label()));
                 scrollRows = 0;
                 filterItems();
-            }).dimensions(searchLeft + searchWidth + SEARCH_SORT_GAP, 28, SORT_BUTTON_WIDTH, SEARCH_HEIGHT).build());
+            }).tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.item_selection.sort")))
+                    .dimensions(searchLeft + searchWidth + SEARCH_SORT_GAP, 28, SORT_BUTTON_WIDTH, SEARCH_HEIGHT).build());
             addDrawableChild(ButtonWidget.builder(configuredOnlyText(), button -> {
                 configuredOnly = !configuredOnly;
                 button.setMessage(configuredOnlyText());
                 scrollRows = 0;
                 filterItems();
-            }).dimensions(searchLeft + searchWidth + SEARCH_SORT_GAP + SORT_BUTTON_WIDTH + SEARCH_SORT_GAP, 28,
+            }).tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.item_selection.configured_only")))
+                    .dimensions(searchLeft + searchWidth + SEARCH_SORT_GAP + SORT_BUTTON_WIDTH + SEARCH_SORT_GAP, 28,
                     CONFIGURED_FILTER_BUTTON_WIDTH, SEARCH_HEIGHT).build());
 
             int left = getLeftPanelLeft() + GRID_PADDING;
             int contentWidth = getLeftPanelWidth() - GRID_PADDING * 2;
             this.stackingForbiddenButton = ButtonWidget.builder(stackingForbiddenText(false), button -> toggleStackingForbidden())
+                    .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.item_selection.stacking")))
                     .dimensions(left, 104, contentWidth, BUTTON_HEIGHT)
                     .build();
             this.stackingForbiddenButton.active = false;
             addDrawableChild(this.stackingForbiddenButton);
 
             this.previousSelectedButton = ButtonWidget.builder(Text.literal("<"), button -> cycleActiveEntry(-1))
+                    .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.item_selection.previous")))
                     .dimensions(left, 48, 20, BUTTON_HEIGHT)
                     .build();
             this.nextSelectedButton = ButtonWidget.builder(Text.literal(">"), button -> cycleActiveEntry(1))
+                    .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.item_selection.next")))
                     .dimensions(left + contentWidth - 20, 48, 20, BUTTON_HEIGHT)
                     .build();
             addDrawableChild(this.previousSelectedButton);
@@ -149,6 +156,7 @@ public final class StackPlusItemSelection {
 
             this.limitInput = new TextFieldWidget(this.textRenderer, left, 142, contentWidth, 20,
                     Text.translatable("screen.stackplus.item_selection.limit_input"));
+            this.limitInput.setTooltip(Tooltip.of(Text.translatable("tooltip.stackplus.item_selection.limit")));
             this.limitInput.setMaxLength(14);
             this.limitInput.setChangedListener(this::onLimitInputChanged);
             addDrawableChild(limitInput);
@@ -159,12 +167,15 @@ public final class StackPlusItemSelection {
             int backButtonY = this.height - 42;
             int halfWidth = (contentWidth - 6) / 2;
             addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.save"), button -> saveSelectedItem())
+                    .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.item_selection.save")))
                     .dimensions(left, backButtonY - BUTTON_HEIGHT - 6, halfWidth, BUTTON_HEIGHT)
                     .build());
             addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.reset"), button -> resetSelectedItem())
+                    .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.item_selection.reset")))
                     .dimensions(left + halfWidth + 6, backButtonY - BUTTON_HEIGHT - 6, halfWidth, BUTTON_HEIGHT)
                     .build());
             addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.back"), button -> close())
+                    .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.settings.back")))
                     .dimensions(left, backButtonY, contentWidth, BUTTON_HEIGHT)
                     .build());
 
@@ -295,6 +306,7 @@ public final class StackPlusItemSelection {
                 int x = left + index % columns * (buttonWidth + gap);
                 int y = top + index / columns * 22;
                 addDrawableChild(ButtonWidget.builder(Text.literal(formatPreset(value)), button -> setPendingLimit(value, true))
+                        .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.item_selection.preset")))
                         .dimensions(x, y, buttonWidth, BUTTON_HEIGHT)
                         .build());
             }
