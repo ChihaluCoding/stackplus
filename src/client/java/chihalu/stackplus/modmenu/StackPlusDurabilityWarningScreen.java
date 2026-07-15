@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -34,10 +35,13 @@ final class StackPlusDurabilityWarningScreen extends Screen {
                 .selected(false)
                 .onValueChange((checkbox, selected) -> suppressWarningSelected = selected)
                 .build();
+        suppressWarning.setTooltip(Tooltip.create(Component.translatable("tooltip.stackplus.durability_warning.suppress")));
         addRenderableWidget(suppressWarning);
         addRenderableWidget(Button.builder(Component.translatable("button.stackplus.save"), button -> confirm())
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.durability_warning.confirm")))
                 .bounds(centerX - 104, buttonY, 100, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("button.stackplus.back"), button -> onClose())
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.settings.back")))
                 .bounds(centerX + 4, buttonY, 100, 20).build());
     }
 

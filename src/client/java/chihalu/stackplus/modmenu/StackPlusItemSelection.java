@@ -5,6 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.core.Holder;
@@ -108,6 +109,7 @@ public final class StackPlusItemSelection {
             int searchWidth = rightWidth - GRID_PADDING * 2 - SORT_BUTTON_WIDTH - CONFIGURED_FILTER_BUTTON_WIDTH - SEARCH_SORT_GAP * 2;
             this.searchBox = new EditBox(this.font, searchLeft, 28, searchWidth, SEARCH_HEIGHT,
                     Component.translatable("screen.stackplus.item_selection.search"));
+            this.searchBox.setTooltip(Tooltip.create(Component.translatable("tooltip.stackplus.item_selection.search")));
             this.searchBox.setMaxLength(80);
             this.searchBox.setValue(searchText);
             updateSearchHint();
@@ -123,27 +125,32 @@ public final class StackPlusItemSelection {
                 button.setMessage(Component.literal(sortMode.label()));
                 scrollRows = 0;
                 filterItems();
-            }).bounds(searchLeft + searchWidth + SEARCH_SORT_GAP, 28, SORT_BUTTON_WIDTH, SEARCH_HEIGHT).build());
+            }).tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.item_selection.sort")))
+                    .bounds(searchLeft + searchWidth + SEARCH_SORT_GAP, 28, SORT_BUTTON_WIDTH, SEARCH_HEIGHT).build());
             addRenderableWidget(Button.builder(configuredOnlyText(), button -> {
                 configuredOnly = !configuredOnly;
                 button.setMessage(configuredOnlyText());
                 scrollRows = 0;
                 filterItems();
-            }).bounds(searchLeft + searchWidth + SEARCH_SORT_GAP + SORT_BUTTON_WIDTH + SEARCH_SORT_GAP, 28,
+            }).tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.item_selection.configured_only")))
+                    .bounds(searchLeft + searchWidth + SEARCH_SORT_GAP + SORT_BUTTON_WIDTH + SEARCH_SORT_GAP, 28,
                     CONFIGURED_FILTER_BUTTON_WIDTH, SEARCH_HEIGHT).build());
 
             int left = getLeftPanelLeft() + GRID_PADDING;
             int contentWidth = getLeftPanelWidth() - GRID_PADDING * 2;
             this.stackingForbiddenButton = Button.builder(stackingForbiddenText(false), button -> toggleStackingForbidden())
+                    .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.item_selection.stacking")))
                     .bounds(left, 104, contentWidth, BUTTON_HEIGHT)
                     .build();
             this.stackingForbiddenButton.active = false;
             addRenderableWidget(this.stackingForbiddenButton);
 
             this.previousSelectedButton = Button.builder(Component.literal("<"), button -> cycleActiveEntry(-1))
+                    .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.item_selection.previous")))
                     .bounds(left, 48, 20, BUTTON_HEIGHT)
                     .build();
             this.nextSelectedButton = Button.builder(Component.literal(">"), button -> cycleActiveEntry(1))
+                    .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.item_selection.next")))
                     .bounds(left + contentWidth - 20, 48, 20, BUTTON_HEIGHT)
                     .build();
             addRenderableWidget(this.previousSelectedButton);
@@ -151,6 +158,7 @@ public final class StackPlusItemSelection {
 
             this.limitInput = new EditBox(this.font, left, 142, contentWidth, 20,
                     Component.translatable("screen.stackplus.item_selection.limit_input"));
+            this.limitInput.setTooltip(Tooltip.create(Component.translatable("tooltip.stackplus.item_selection.limit")));
             this.limitInput.setMaxLength(14);
             this.limitInput.setResponder(this::onLimitInputChanged);
             addRenderableWidget(limitInput);
@@ -161,12 +169,15 @@ public final class StackPlusItemSelection {
             int backButtonY = this.height - 42;
             int halfWidth = (contentWidth - 6) / 2;
             addRenderableWidget(Button.builder(Component.translatable("button.stackplus.save"), button -> saveSelectedItem())
+                    .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.item_selection.save")))
                     .bounds(left, backButtonY - BUTTON_HEIGHT - 6, halfWidth, BUTTON_HEIGHT)
                     .build());
             addRenderableWidget(Button.builder(Component.translatable("button.stackplus.reset"), button -> resetSelectedItem())
+                    .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.item_selection.reset")))
                     .bounds(left + halfWidth + 6, backButtonY - BUTTON_HEIGHT - 6, halfWidth, BUTTON_HEIGHT)
                     .build());
             addRenderableWidget(Button.builder(Component.translatable("button.stackplus.back"), button -> onClose())
+                    .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.settings.back")))
                     .bounds(left, backButtonY, contentWidth, BUTTON_HEIGHT)
                     .build());
 
@@ -293,6 +304,7 @@ public final class StackPlusItemSelection {
                 int x = left + index % columns * (buttonWidth + gap);
                 int y = top + index / columns * 22;
                 addRenderableWidget(Button.builder(Component.literal(formatPreset(value)), button -> setPendingLimit(value, true))
+                        .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.item_selection.preset")))
                         .bounds(x, y, buttonWidth, BUTTON_HEIGHT)
                         .build());
             }

@@ -8,6 +8,7 @@
 		"HudSelectedItemNameMixin",
 		"ItemStackTooltipMixin",
 		"MultiPlayerGameModeMixin",
+		"MultiPackResourceManagerMixin",
 		"ServerboundSetCreativeModeSlotPacketMixin"
 	],
 	"injectors": {
