@@ -42,6 +42,11 @@ public class StackLimitConfig {
     private static final String CONFIG_FILE_NAME = "stackplus.properties";
     private static final String STACK_LIMIT_KEY = "stackLimit";
     private static final String DISPLAY_MODE_KEY = "displayMode";
+    private static final String SLOT_COUNT_FONT_KEY = "slotCountFont";
+    private static final String SELECTED_ITEM_COUNT_FONT_KEY = "selectedItemCountFont";
+    private static final String TOOLTIP_COUNT_FONT_KEY = "tooltipCountFont";
+    private static final String FONT_PRIORITY_KEY = "fontPriority";
+    private static final String UNIFORM_SLOT_COUNT_HEIGHT_KEY = "uniformSlotCountHeight";
     private static final String SELECTED_ITEM_COUNT_MODE_KEY = "selectedItemCountMode";
     private static final String SELECTED_ITEM_COUNT_POSITION_KEY = "selectedItemCountPosition";
     private static final String SELECTED_ITEM_COUNT_ALWAYS_VISIBLE_KEY = "selectedItemCountAlwaysVisible";
@@ -59,6 +64,11 @@ public class StackLimitConfig {
     private static final ConfigValues LOADED_CONFIG = loadConfig();
     private static int stackLimit = LOADED_CONFIG.stackLimit();
     private static DisplayMode displayMode = LOADED_CONFIG.displayMode();
+    private static CountFont slotCountFont = LOADED_CONFIG.slotCountFont();
+    private static CountFont selectedItemCountFont = LOADED_CONFIG.selectedItemCountFont();
+    private static CountFont tooltipCountFont = LOADED_CONFIG.tooltipCountFont();
+    private static FontPriority fontPriority = LOADED_CONFIG.fontPriority();
+    private static boolean uniformSlotCountHeight = LOADED_CONFIG.uniformSlotCountHeight();
     private static SelectedItemCountMode selectedItemCountMode = LOADED_CONFIG.selectedItemCountMode();
     private static SelectedItemCountPosition selectedItemCountPosition = LOADED_CONFIG.selectedItemCountPosition();
     private static int selectedItemCountColorRgb = LOADED_CONFIG.selectedItemCountColorRgb();
@@ -100,6 +110,68 @@ public class StackLimitConfig {
                 }
             }
             return COMPACT;
+        }
+    }
+
+    public enum CountFont {
+        DEFAULT("default"),
+        JETBRAINS_MONO_EXTRA_BOLD("jetbrainsMonoExtraBold"),
+        ROBOTO_CONDENSED_BLACK("robotoCondensedBlack"),
+        BUNGEE("bungee"),
+        BLACK_OPS_ONE("blackOpsOne"),
+        LILITA_ONE("lilitaOne"),
+        PRESS_START_2P("pressStart2p"),
+        CUSTOM("custom");
+
+        private final String serializedName;
+
+        CountFont(String serializedName) {
+            this.serializedName = serializedName;
+        }
+
+        public String getSerializedName() {
+            return serializedName;
+        }
+
+        public CountFont next() {
+            return values()[(ordinal() + 1) % values().length];
+        }
+
+        public static CountFont fromSerializedName(String value) {
+            for (CountFont font : values()) {
+                if (font.serializedName.equals(value)) {
+                    return font;
+                }
+            }
+            return DEFAULT;
+        }
+    }
+
+    public enum FontPriority {
+        LOW("low"),
+        HIGH("high");
+
+        private final String serializedName;
+
+        FontPriority(String serializedName) {
+            this.serializedName = serializedName;
+        }
+
+        public String getSerializedName() {
+            return serializedName;
+        }
+
+        public FontPriority next() {
+            return this == LOW ? HIGH : LOW;
+        }
+
+        public static FontPriority fromSerializedName(String value) {
+            for (FontPriority priority : values()) {
+                if (priority.serializedName.equals(value)) {
+                    return priority;
+                }
+            }
+            return LOW;
         }
     }
 
@@ -268,6 +340,40 @@ public class StackLimitConfig {
         return displayMode;
     }
 
+    public static CountFont getSlotCountFont() {
+        return slotCountFont;
+    }
+
+    public static CountFont getSelectedItemCountFont() {
+        return selectedItemCountFont;
+    }
+
+    public static CountFont getTooltipCountFont() {
+        return tooltipCountFont;
+    }
+
+    public static FontPriority getFontPriority() {
+        return fontPriority;
+    }
+
+    public static boolean isUniformSlotCountHeight() {
+        return uniformSlotCountHeight;
+    }
+
+    public static void setSlotCountFont(CountFont font) {
+        slotCountFont = font;
+    }
+
+    public static void saveCountFonts(CountFont slotFont, CountFont selectedItemFont, CountFont tooltipFont,
+                                      FontPriority priority, boolean uniformHeight) {
+        slotCountFont = slotFont;
+        selectedItemCountFont = selectedItemFont;
+        tooltipCountFont = tooltipFont;
+        fontPriority = priority;
+        uniformSlotCountHeight = uniformHeight;
+        saveConfig();
+    }
+
     public static void setDisplayMode(DisplayMode mode) {
         displayMode = mode;
     }
@@ -281,7 +387,7 @@ public class StackLimitConfig {
     }
 
     public static SelectedItemCountPosition getSelectedItemCountPosition() {
-        return selectedItemCountPosition;
+        return SelectedItemCountPosition.BELOW;
     }
 
     public static void setSelectedItemCountPosition(SelectedItemCountPosition position) {
@@ -658,6 +764,11 @@ public class StackLimitConfig {
                 ? String.valueOf(stackLimit)
                 : persistedStackRules.getProperty(STACK_LIMIT_KEY, String.valueOf(DEFAULT_STACK_LIMIT)));
         properties.setProperty(DISPLAY_MODE_KEY, displayMode.getSerializedName());
+        properties.setProperty(SLOT_COUNT_FONT_KEY, slotCountFont.getSerializedName());
+        properties.setProperty(SELECTED_ITEM_COUNT_FONT_KEY, selectedItemCountFont.getSerializedName());
+        properties.setProperty(TOOLTIP_COUNT_FONT_KEY, tooltipCountFont.getSerializedName());
+        properties.setProperty(FONT_PRIORITY_KEY, fontPriority.getSerializedName());
+        properties.setProperty(UNIFORM_SLOT_COUNT_HEIGHT_KEY, String.valueOf(uniformSlotCountHeight));
         properties.setProperty(SELECTED_ITEM_COUNT_MODE_KEY, selectedItemCountMode.getSerializedName());
         properties.setProperty(SELECTED_ITEM_COUNT_POSITION_KEY, selectedItemCountPosition.getSerializedName());
         properties.setProperty(SELECTED_ITEM_COUNT_COLOR_KEY, String.format(Locale.ROOT, "%06X", selectedItemCountColorRgb));
@@ -783,13 +894,19 @@ public class StackLimitConfig {
             properties.load(input);
             int loadedStackLimit = clampStackLimit(Integer.parseInt(properties.getProperty(STACK_LIMIT_KEY, String.valueOf(DEFAULT_STACK_LIMIT))));
             DisplayMode loadedDisplayMode = DisplayMode.fromSerializedName(properties.getProperty(DISPLAY_MODE_KEY, DisplayMode.COMPACT.getSerializedName()));
+            CountFont loadedSlotCountFont = CountFont.fromSerializedName(properties.getProperty(SLOT_COUNT_FONT_KEY, CountFont.DEFAULT.getSerializedName()));
+            CountFont loadedSelectedItemCountFont = CountFont.fromSerializedName(properties.getProperty(SELECTED_ITEM_COUNT_FONT_KEY, CountFont.DEFAULT.getSerializedName()));
+            CountFont loadedTooltipCountFont = CountFont.fromSerializedName(properties.getProperty(TOOLTIP_COUNT_FONT_KEY, CountFont.DEFAULT.getSerializedName()));
+            FontPriority loadedFontPriority = FontPriority.fromSerializedName(properties.getProperty(FONT_PRIORITY_KEY, FontPriority.LOW.getSerializedName()));
+            boolean loadedUniformSlotCountHeight = Boolean.parseBoolean(properties.getProperty(UNIFORM_SLOT_COUNT_HEIGHT_KEY, "true"));
             SelectedItemCountMode loadedSelectedItemCountMode = loadSelectedItemCountMode(properties);
             SelectedItemCountPosition loadedSelectedItemCountPosition = SelectedItemCountPosition.fromSerializedName(properties.getProperty(SELECTED_ITEM_COUNT_POSITION_KEY, SelectedItemCountPosition.BESIDE.getSerializedName()));
             int loadedSelectedItemCountColorRgb = loadSelectedItemCountColorRgb(properties);
             boolean loadedDurabilityWarningSuppressed = Boolean.parseBoolean(properties.getProperty(DURABILITY_WARNING_SUPPRESSED_KEY, "false"));
             boolean loadedUpdateNotificationsEnabled = Boolean.parseBoolean(properties.getProperty(UPDATE_NOTIFICATIONS_ENABLED_KEY, "true"));
             boolean loadedStackLimitPresetsVisible = Boolean.parseBoolean(properties.getProperty(STACK_LIMIT_PRESETS_VISIBLE_KEY, "true"));
-            return new ConfigValues(loadedStackLimit, loadedDisplayMode, loadedSelectedItemCountMode, loadedSelectedItemCountPosition, loadedSelectedItemCountColorRgb,
+            return new ConfigValues(loadedStackLimit, loadedDisplayMode, loadedSlotCountFont, loadedSelectedItemCountFont, loadedTooltipCountFont, loadedFontPriority, loadedUniformSlotCountHeight,
+                    loadedSelectedItemCountMode, loadedSelectedItemCountPosition, loadedSelectedItemCountColorRgb,
                     loadedDurabilityWarningSuppressed, loadedUpdateNotificationsEnabled, loadedStackLimitPresetsVisible, loadCustomStackLimitPresets(properties), loadItemStackLimits(properties),
                     loadStackVariantLimits(properties), loadForcedStackableItems(properties),
                     StackRuleConfigSupport.loadEnabledRuleIds(properties, FORBIDDEN_ITEM_KEY_PREFIX),
@@ -944,7 +1061,7 @@ public class StackLimitConfig {
     }
 
     private static ConfigValues defaultConfigValues() {
-        return new ConfigValues(DEFAULT_STACK_LIMIT, DisplayMode.COMPACT, SelectedItemCountMode.ON_SWITCH,
+        return new ConfigValues(DEFAULT_STACK_LIMIT, DisplayMode.COMPACT, CountFont.DEFAULT, CountFont.DEFAULT, CountFont.DEFAULT, FontPriority.LOW, true, SelectedItemCountMode.ON_SWITCH,
                 SelectedItemCountPosition.BESIDE, 0xFFFFFF, false, true, true, List.of(), Map.of(), Map.of(), Set.of(), Set.of(), Map.of());
     }
 
@@ -966,7 +1083,10 @@ public class StackLimitConfig {
         }
     }
 
-    private record ConfigValues(int stackLimit, DisplayMode displayMode, SelectedItemCountMode selectedItemCountMode,
+    private record ConfigValues(int stackLimit, DisplayMode displayMode, CountFont slotCountFont,
+                                CountFont selectedItemCountFont, CountFont tooltipCountFont, FontPriority fontPriority,
+                                boolean uniformSlotCountHeight,
+                                SelectedItemCountMode selectedItemCountMode,
                                 SelectedItemCountPosition selectedItemCountPosition, int selectedItemCountColorRgb,
                                 boolean durabilityWarningSuppressed,
                                 boolean updateNotificationsEnabled, boolean stackLimitPresetsVisible,

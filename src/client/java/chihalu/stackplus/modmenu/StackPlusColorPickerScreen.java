@@ -3,6 +3,7 @@ package chihalu.stackplus.modmenu;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -17,6 +18,8 @@ import java.util.function.IntConsumer;
 
 /** HSVカラーサークルから選択アイテム数の表示色を選ぶ画面です。 */
 final class StackPlusColorPickerScreen extends Screen {
+    private static final int PANEL_COLOR = 0x80000000;
+    private static final int PANEL_BORDER_COLOR = 0xFFFFFFFF;
     private static final int WHEEL_RADIUS = 64;
     private static final int PIXEL_SIZE = 1;
     private static final int WHEEL_SIZE = WHEEL_RADIUS * 2 + 1;
@@ -49,11 +52,27 @@ final class StackPlusColorPickerScreen extends Screen {
         int buttonGap = 6;
         int firstButtonX = this.width / 2 - (buttonWidth * 3 + buttonGap * 2) / 2;
         addRenderableWidget(Button.builder(Component.translatable("button.stackplus.save"), button -> save())
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.color_picker.save")))
                 .bounds(firstButtonX, buttonY, buttonWidth, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("button.stackplus.reset"), button -> resetColor())
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.color_picker.reset")))
                 .bounds(firstButtonX + buttonWidth + buttonGap, buttonY, buttonWidth, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("button.stackplus.back"), button -> onClose())
+                .tooltip(Tooltip.create(Component.translatable("tooltip.stackplus.settings.back")))
                 .bounds(firstButtonX + (buttonWidth + buttonGap) * 2, buttonY, buttonWidth, 20).build());
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(graphics, mouseX, mouseY, partialTick);
+        int centerX = this.width / 2;
+        int centerY = getWheelCenterY();
+        int left = centerX - 120;
+        int top = centerY - WHEEL_RADIUS - 40;
+        int panelWidth = 240;
+        int panelHeight = WHEEL_SIZE + 87;
+        graphics.fill(left, top, left + panelWidth, top + panelHeight, PANEL_COLOR);
+        graphics.renderOutline(left, top, panelWidth, panelHeight, PANEL_BORDER_COLOR);
     }
 
     @Override
@@ -113,7 +132,6 @@ final class StackPlusColorPickerScreen extends Screen {
 
     private void save() {
         colorConsumer.accept(selectedColorRgb);
-        onClose();
     }
 
     private void resetColor() {
