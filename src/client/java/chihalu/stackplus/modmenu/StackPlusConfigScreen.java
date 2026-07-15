@@ -3,6 +3,7 @@ package chihalu.stackplus.modmenu;
 import chihalu.stackplus.StackLimitConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -111,9 +112,11 @@ public class StackPlusConfigScreen extends Screen {
 
         this.stackLimitSlider = new StackLimitSlider(left, layout.sliderY(), sliderWidth, 20, pendingStackLimit,
                 value -> setPendingStackLimit(value, false, true));
+        this.stackLimitSlider.setTooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.stack_limit")));
         addDrawableChild(this.stackLimitSlider);
 
         this.stackLimitInput = new TextFieldWidget(this.textRenderer, left + sliderWidth + CONTROL_GAP, layout.sliderY(), INPUT_WIDTH, 20, stackLimitText(pendingStackLimit));
+        this.stackLimitInput.setTooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.stack_limit")));
         this.stackLimitInput.setMaxLength(14);
         this.stackLimitInput.setChangedListener(this::onStackLimitInputChanged);
         setStackLimitInputText(pendingStackLimit);
@@ -125,6 +128,7 @@ public class StackPlusConfigScreen extends Screen {
                     pendingDisplayMode = pendingDisplayMode.next();
                     button.setMessage(displayModeText(pendingDisplayMode));
                 })
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.display_mode")))
                 .dimensions(left, layout.displayModeY(), secondaryButtonWidth, 20)
                 .build();
         addDrawableChild(this.displayModeButton);
@@ -133,6 +137,7 @@ public class StackPlusConfigScreen extends Screen {
                     syncPendingStackLimitFromInput();
                     StackPlusItemSelection.start(this, pendingStackLimit);
                 })
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.item_limits")))
                 .dimensions(left + secondaryButtonWidth + CONTROL_GAP, layout.displayModeY(), secondaryButtonWidth, 20)
                 .build());
 
@@ -140,6 +145,7 @@ public class StackPlusConfigScreen extends Screen {
                     pendingSelectedItemCountMode = pendingSelectedItemCountMode.next();
                     button.setMessage(selectedItemCountModeText(pendingSelectedItemCountMode));
                 })
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.selected_item_count")))
                 .dimensions(left, layout.displayDescriptionY(), secondaryButtonWidth, 20)
                 .build();
         addDrawableChild(this.selectedItemCountButton);
@@ -148,37 +154,40 @@ public class StackPlusConfigScreen extends Screen {
                     pendingUpdateNotificationsEnabled = !pendingUpdateNotificationsEnabled;
                     button.setMessage(updateNotificationsText(pendingUpdateNotificationsEnabled));
                 })
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.update_notifications")))
                 .dimensions(left + secondaryButtonWidth + CONTROL_GAP, layout.displayDescriptionY(), secondaryButtonWidth, 20)
                 .build();
         addDrawableChild(this.updateNotificationsButton);
-
-        this.selectedItemCountPositionButton = ButtonWidget.builder(selectedItemCountPositionText(pendingSelectedItemCountPosition), button -> {
-                    pendingSelectedItemCountPosition = pendingSelectedItemCountPosition.next();
-                    button.setMessage(selectedItemCountPositionText(pendingSelectedItemCountPosition));
-                })
-                .dimensions(left, layout.updateNotificationsY(), secondaryButtonWidth, 20)
-                .build();
-        addDrawableChild(this.selectedItemCountPositionButton);
 
         addDrawableChild(ButtonWidget.builder(stackLimitPresetsVisibleText(), button -> {
                     pendingStackLimitPresetsVisible = !pendingStackLimitPresetsVisible;
                     StackLimitConfig.saveStackLimitPresetsVisible(pendingStackLimitPresetsVisible);
                     clearAndInit();
                 })
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.preset_visibility")))
                 .dimensions(left + secondaryButtonWidth + CONTROL_GAP, layout.updateNotificationsY(), secondaryButtonWidth, 20)
                 .build());
 
         this.selectedItemCountColorButton = ButtonWidget.builder(selectedItemCountColorText(pendingSelectedItemCountColorRgb), button ->
                     StackPlusColorPickerScreen.open(this, pendingSelectedItemCountColorRgb, this::setPendingSelectedItemCountColorRgb))
-                .dimensions(left, layout.updateNotificationsY() + 24, secondaryButtonWidth, 20)
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.selected_item_count_color")))
+                .dimensions(left, layout.updateNotificationsY(), secondaryButtonWidth, 20)
                 .build();
         addDrawableChild(this.selectedItemCountColorButton);
 
+        addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.font_settings"), button ->
+                    MinecraftClient.getInstance().setScreen(new StackPlusFontConfigScreen(this)))
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.font_settings")))
+                .dimensions(left + secondaryButtonWidth + CONTROL_GAP, layout.updateNotificationsY() + 24, secondaryButtonWidth, 20)
+                .build());
+
         int firstButtonX = centerX - (ACTION_BUTTON_WIDTH * 2 + ACTION_BUTTON_GAP) / 2;
         addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.save"), button -> save())
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.settings.save")))
                 .dimensions(firstButtonX, layout.actionButtonY(), ACTION_BUTTON_WIDTH, 20)
                 .build());
         addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.back"), button -> close())
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.settings.back")))
                 .dimensions(firstButtonX + ACTION_BUTTON_WIDTH + ACTION_BUTTON_GAP, layout.actionButtonY(), ACTION_BUTTON_WIDTH, 20)
                 .build());
     }
@@ -194,7 +203,7 @@ public class StackPlusConfigScreen extends Screen {
             drawCenteredText(context, Text.translatable("screen.stackplus.config.presets_label"), this.width / 2, layout.presetLabelY(), 0xFFE0E0E0);
             int pageCount = getPresetPageCount(createPresetEntries().size());
             int currentPage = Math.max(0, Math.min(presetPage, pageCount - 1));
-            
+
             context.drawText(this.textRenderer, Text.literal((currentPage + 1) + "/" + pageCount), left + 60, layout.presetLabelY(), 0xFFB8B8B8, false);
         }
         drawCenteredText(context, Text.translatable("screen.stackplus.config.existing_stack_hint"), this.width / 2, layout.hintY(), 0xFFB8B8B8);
@@ -274,7 +283,8 @@ public class StackPlusConfigScreen extends Screen {
 
     private static Text selectedItemCountColorText(int colorRgb) {
         return Text.translatable("screen.stackplus.config.selected_item_count_color",
-                Text.literal(String.format("#%06X", colorRgb & 0xFFFFFF)).styled(style -> style.withColor(colorRgb)));
+                Text.literal(String.format("#%06X", colorRgb & 0xFFFFFF))
+                        .styled(style -> style.withColor(colorRgb)));
     }
 
     private static Text updateNotificationsText(boolean enabled) {
@@ -301,9 +311,11 @@ public class StackPlusConfigScreen extends Screen {
         int editButtonWidth = (buttonWidth - editGap) / 2;
         int removeButtonWidth = buttonWidth - editButtonWidth - editGap;
         addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.add_preset"), button -> addCustomPreset())
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.add_preset")))
                 .dimensions(firstX, top, editButtonWidth, 20)
                 .build());
         addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.remove_preset"), button -> removeCustomPreset())
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.remove_preset")))
                 .dimensions(firstX + editButtonWidth + editGap, top, removeButtonWidth, 20)
                 .build());
     }
@@ -346,6 +358,7 @@ public class StackPlusConfigScreen extends Screen {
                     presetPage = Math.max(0, presetPage - 1);
                     clearAndInit();
                 })
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.previous_page")))
                 .dimensions(left, presetLabelY - 6, 24, 20)
                 .build();
         previousButton.active = page > 0;
@@ -355,6 +368,7 @@ public class StackPlusConfigScreen extends Screen {
                     presetPage = Math.min(pageCount - 1, presetPage + 1);
                     clearAndInit();
                 })
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.next_page")))
                 .dimensions(left + 30, presetLabelY - 6, 24, 20)
                 .build();
         nextButton.active = page + 1 < pageCount;
@@ -367,6 +381,7 @@ public class StackPlusConfigScreen extends Screen {
         int x = left + column * (buttonWidth + gap);
         int y = presetY + row * 22;
         addDrawableChild(ButtonWidget.builder(message, button -> setPendingStackLimit(presetValue, true, true))
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.config.preset")))
                 .dimensions(x, y, buttonWidth, 20)
                 .build());
     }
