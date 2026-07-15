@@ -15,6 +15,7 @@ StackPlus also keeps huge counts readable, provides per-item rules, and puts eve
 | Exact tooltip count | See the full amount alongside its abbreviated value. |
 | Total count above the hotbar | Show the total number of the selected item across your inventory above the hotbar. |
 | Display customization | Change the counter position, visibility, and text color. |
+| Font customization | Choose the font used for item counts. |
 | Update notifications | Enable or disable update notices from the settings screen. |
 
 Damageable equipment, including tools, weapons, armor, and shields, follows vanilla behavior and remains unstackable by default.
@@ -39,6 +40,9 @@ Snapshot versions can run without Mod Menu. In that case, the maximum stack size
   <tr>
     <td><img src="https://raw.githubusercontent.com/ChihaluCoding/stackplus/main/imges/5.png" alt="Selected item count above the hotbar"></td>
     <td><img src="https://raw.githubusercontent.com/ChihaluCoding/stackplus/main/imges/6.png" alt="Item count color picker"></td>
+  </tr>
+  <tr>
+    <td><img src="https://raw.githubusercontent.com/ChihaluCoding/stackplus/main/imges/7.png" alt="Font Setting"></td>
   </tr>
 </table>
 
