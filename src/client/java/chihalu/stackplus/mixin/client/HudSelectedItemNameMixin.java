@@ -2,6 +2,7 @@ package chihalu.stackplus.mixin.client;
 
 import chihalu.stackplus.StackCountFormatter;
 import chihalu.stackplus.StackLimitConfig;
+import chihalu.stackplus.client.StackPlusFontSupport;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.Gui;
@@ -16,8 +17,7 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * ホットバー選択時に表示されるアイテム名へ、正確なスタック数を追加します。
- * 設定でアイテム名の横（BESIDE）または下（BELOW）に表示を切り替えられます。
+ * ホットバー選択時に表示されるアイテム名の下へ、正確なスタック数を追加します。
  */
 @Mixin(Gui.class)
 public class HudSelectedItemNameMixin {
@@ -61,25 +61,6 @@ public class HudSelectedItemNameMixin {
 
     }
 
-    @ModifyArg(
-            method = "extractSelectedItemName",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/chat/MutableComponent;append(Lnet/minecraft/network/chat/Component;)Lnet/minecraft/network/chat/MutableComponent;"),
-            index = 0
-    )
-    private Component stackplus$appendExactCountToSelectedItemName(Component itemName) {
-        if (!StackLimitConfig.getSelectedItemCountMode().appendsCountToItemName()
-                || lastToolHighlight.isEmpty()
-                || lastToolHighlight.getCount() <= 1
-                || StackLimitConfig.getSelectedItemCountPosition().isBelow()) {
-            return itemName;
-        }
-
-        return Component.empty()
-                .append(itemName)
-                .append(Component.literal(" x" + StackCountFormatter.formatExact(lastToolHighlight.getCount()))
-                        .withColor(StackLimitConfig.getSelectedItemCountColorRgb()));
-    }
-
     @Inject(method = "extractSelectedItemName", at = @At("TAIL"))
     private void stackplus$renderPersistentItemCount(GuiGraphicsExtractor graphics, CallbackInfo callbackInfo) {
         StackLimitConfig.SelectedItemCountMode mode = StackLimitConfig.getSelectedItemCountMode();
@@ -91,14 +72,9 @@ public class HudSelectedItemNameMixin {
             return;
         }
 
-        boolean below = StackLimitConfig.getSelectedItemCountPosition().isBelow();
-        if (!below && (!mode.keepsVisible() || toolHighlightTimer > 0)) {
-            return;
-        }
-
         Minecraft client = Minecraft.getInstance();
         int screenWidth = client.getWindow().getGuiScaledWidth();
-        int y = client.getWindow().getGuiScaledHeight() - 59 + (below ? STACKPLUS_BELOW_LINE_OFFSET : 0);
+        int y = client.getWindow().getGuiScaledHeight() - 59 + STACKPLUS_BELOW_LINE_OFFSET;
         if (client.gameMode != null && !client.gameMode.getPlayerMode().isCreative()) {
             y -= 13;
             
@@ -107,7 +83,9 @@ public class HudSelectedItemNameMixin {
         int alpha = mode.keepsVisible() ? 255 : (toolHighlightTimer > 15 ? 255 : toolHighlightTimer * 17);
         if (alpha < 0) alpha = 0;
         int color = (alpha << 24) | StackLimitConfig.getSelectedItemCountColorRgb();
-        MutableComponent countText = Component.literal("x" + StackCountFormatter.formatExact(selectedStack.getCount()));
+        Component countText = StackPlusFontSupport.apply(
+                Component.literal("x" + StackCountFormatter.formatExact(selectedStack.getCount())),
+                StackLimitConfig.getSelectedItemCountFont());
         graphics.centeredText(client.font, countText, screenWidth / 2, y, color);
     }
 }

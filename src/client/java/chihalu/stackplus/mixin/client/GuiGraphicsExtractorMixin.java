@@ -2,8 +2,10 @@ package chihalu.stackplus.mixin.client;
 
 import chihalu.stackplus.StackCountFormatter;
 import chihalu.stackplus.StackLimitConfig;
+import chihalu.stackplus.client.StackPlusFontSupport;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.font.TextRenderable;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Matrix3x2fStack;
@@ -18,9 +20,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(GuiGraphicsExtractor.class)
 public abstract class GuiGraphicsExtractorMixin {
-    private static final float SLOT_SIZE = 16.0F;
-    private static final float AUTO_FIT_MAX_WIDTH = 15.0F;
-    private static final float THREE_CHARACTER_SCALE = 0.9F;
+    private static final float AUTO_FIT_MAX_WIDTH = 16.0F;
+    private static final float UNIFORM_TARGET_VISUAL_HEIGHT = 7.0F;
+    private static final float LEGACY_TARGET_VISUAL_HEIGHT = 9.0F;
+    private static final float LEGACY_MAX_UPSCALE = 1.5F;
+    private static final float COUNT_BOTTOM_OFFSET = 17.0F;
 
     @Shadow
     private Matrix3x2fStack pose;
@@ -35,16 +39,12 @@ public abstract class GuiGraphicsExtractorMixin {
         }
 
         String label = getCountLabel(stack, countLabel);
-        if (shouldUseVanillaSizedLabel(label)) {
-            return;
-        }
-
-        Component labelComponent = Component.literal(label);
+        Component labelComponent = StackPlusFontSupport.apply(Component.literal(label), StackLimitConfig.getSlotCountFont());
 
         float scale = getCountScale(label, font, labelComponent);
-        int labelWidth = font.width(labelComponent);
-        float labelX = getCountX(label, x, labelWidth, scale);
-        float labelY = getCountY(font, y, scale);
+        VisualBounds visualBounds = getVisualBounds(font, labelComponent);
+        float labelX = x + 17.0F - font.width(labelComponent) * scale;
+        float labelY = y + COUNT_BOTTOM_OFFSET - visualBounds.bottom() * scale;
 
         pose.pushMatrix();
         pose.translate(labelX, labelY);
@@ -55,46 +55,104 @@ public abstract class GuiGraphicsExtractorMixin {
     }
 
     private static String getCountLabel(ItemStack stack, String countLabel) {
-        if (countLabel != null) {
+        if (countLabel != null && !isNumericCountLabel(countLabel)) {
             return countLabel;
         }
 
         int count = stack.getCount();
-        if (shouldUseStackPlusLabel(count)) {
-            return StackCountFormatter.format(count);
-        }
-
-        return String.valueOf(count);
+        return shouldUseStackPlusLabel(count) ? StackCountFormatter.format(count) : String.valueOf(count);
     }
 
-    private static boolean shouldUseVanillaSizedLabel(String label) {
-        return label.length() <= 2 && label.chars().allMatch(Character::isDigit);
+    private static boolean isNumericCountLabel(String label) {
+        if (label.isEmpty() || !Character.isDigit(label.charAt(0))) {
+            return false;
+        }
+        for (int index = 1; index < label.length(); index++) {
+            char character = label.charAt(index);
+            boolean finalSuffix = index == label.length() - 1
+                    && (character == 'K' || character == 'M' || character == 'B'
+                    || character == 'k' || character == 'm' || character == 'b' || character == '+');
+            if (!Character.isDigit(character) && character != '.' && character != ',' && !finalSuffix) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static float getCountScale(String label, Font font, Component labelComponent) {
-        if (label.length() <= 3) {
-            return label.length() == 3 ? THREE_CHARACTER_SCALE : 1.0F;
+        char widestDigit = getWidestCharacter("0123456789", font, labelComponent);
+        char widestUnit = getWidestCharacter("KMB", font, labelComponent);
+
+        StringBuilder reference = new StringBuilder(label.length());
+        for (int index = 0; index < label.length(); index++) {
+            char character = label.charAt(index);
+            if (Character.isDigit(character)) {
+                reference.append(widestDigit);
+            } else if (character == 'K' || character == 'M' || character == 'B'
+                    || character == 'k' || character == 'm' || character == 'b') {
+                reference.append(widestUnit);
+            } else {
+                reference.append(character);
+            }
         }
 
-        int labelWidth = font.width(labelComponent);
-        if (labelWidth <= 0) {
+        Component widthReference = Component.literal(reference.toString())
+                .withStyle(labelComponent.getStyle());
+        VisualBounds referenceBounds = getVisualBounds(font, widthReference);
+        if (referenceBounds.width() <= 0 || referenceBounds.height() <= 0) {
             return 1.0F;
         }
 
-        float widthScale = AUTO_FIT_MAX_WIDTH / labelWidth;
-        return Math.min(1.0F, widthScale);
-    }
-
-    private static float getCountX(String label, int x, int labelWidth, float scale) {
-        if (label.length() == 4) {
-            return x + (SLOT_SIZE - labelWidth * scale) / 2.0F;
+        float widthScale = AUTO_FIT_MAX_WIDTH / referenceBounds.width();
+        if (StackLimitConfig.isUniformSlotCountHeight()) {
+            float heightScale = UNIFORM_TARGET_VISUAL_HEIGHT / referenceBounds.height();
+            return Math.min(widthScale, heightScale);
         }
 
-        return x + 17.0F - labelWidth * scale;
+        float heightScale = LEGACY_TARGET_VISUAL_HEIGHT / referenceBounds.height();
+        return Math.min(LEGACY_MAX_UPSCALE, Math.min(widthScale, heightScale));
     }
 
-    private static float getCountY(Font font, int y, float scale) {
-        return y + 18.0F - font.lineHeight * scale;
+    private static char getWidestCharacter(String candidates, Font font, Component styledComponent) {
+        char widest = candidates.charAt(0);
+        int widestWidth = 0;
+        for (int index = 0; index < candidates.length(); index++) {
+            char candidate = candidates.charAt(index);
+            int width = font.width(Component.literal(String.valueOf(candidate)).withStyle(styledComponent.getStyle()));
+            if (width > widestWidth) {
+                widest = candidate;
+                widestWidth = width;
+            }
+        }
+        return widest;
+    }
+
+    private static VisualBounds getVisualBounds(Font font, Component component) {
+        float[] bounds = {Float.MAX_VALUE, Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE};
+        font.prepareText(component.getVisualOrderText(), 0.0F, 0.0F,
+                0xFFFFFFFF, true, false, 0).visit(new Font.GlyphVisitor() {
+            @Override
+            public void acceptGlyph(TextRenderable.Styled renderable) {
+                bounds[0] = Math.min(bounds[0], renderable.left());
+                bounds[1] = Math.min(bounds[1], renderable.top());
+                bounds[2] = Math.max(bounds[2], renderable.right());
+                bounds[3] = Math.max(bounds[3], renderable.bottom());
+            }
+        });
+        if (bounds[0] >= bounds[2] || bounds[1] >= bounds[3]) {
+            return new VisualBounds(0.0F, 0.0F, Math.max(1, font.width(component)), font.lineHeight);
+        }
+        return new VisualBounds(bounds[0], bounds[1], bounds[2], bounds[3]);
+    }
+
+    private record VisualBounds(float left, float top, float right, float bottom) {
+        private float width() {
+            return right - left;
+        }
+
+        private float height() {
+            return bottom - top;
+        }
     }
 
     private static boolean shouldUseStackPlusLabel(int count) {
@@ -104,4 +162,5 @@ public abstract class GuiGraphicsExtractorMixin {
 
         return count >= 1000;
     }
+
 }
