@@ -5,6 +5,8 @@
 	"mixins": [
 		"AbstractChestedHorseSaveDataMixin",
 		"BundleItemMixin",
+		"compat.IronFurnacesBlockEntityMixin",
+		"compat.IronFurnacesFuelSlotMixin",
 		"ContainerHelperSaveDataMixin",
 		"ContainerMixin",
 		"ContainersMixin",
@@ -17,6 +19,7 @@
 		"ItemStackTemplateMixin",
 		"ItemStackWithSlotMixin",
 		"ItemStackValidatedStreamCodecMixin",
+		"ItemVariantImplMixin",
 		"PlayerSaveDataMixin",
 		"SlotMixin"
 	],

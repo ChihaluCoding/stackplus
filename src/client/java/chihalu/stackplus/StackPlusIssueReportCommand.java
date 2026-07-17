@@ -21,6 +21,8 @@ public final class StackPlusIssueReportCommand {
     private static final String REPORT_DIRECTORY_NAME = "stackplus";
     private static final String REPORT_FILE_NAME = "stackplus-issue-report.txt";
     private static final String REPORT_DISPLAY_PATH = REPORT_DIRECTORY_NAME + "/" + REPORT_FILE_NAME;
+    private static final String FABRIC_MODULE_ID_PREFIX = "fabric-";
+    private static final String C2ME_MODULE_ID_PREFIX = "c2me-";
 
     private StackPlusIssueReportCommand() {
     }
@@ -63,6 +65,15 @@ public final class StackPlusIssueReportCommand {
     private static String buildIssueReportText() {
         List<ModContainer> mods = new ArrayList<>(FabricLoader.getInstance().getAllMods());
         mods.sort(Comparator.comparing(mod -> mod.getMetadata().getId()));
+        List<ModContainer> fabricModules = mods.stream()
+                .filter(mod -> isFabricModule(mod.getMetadata()))
+                .toList();
+        List<ModContainer> c2meModules = mods.stream()
+                .filter(mod -> isC2meModule(mod.getMetadata()))
+                .toList();
+        List<ModContainer> otherMods = mods.stream()
+                .filter(mod -> !isFabricModule(mod.getMetadata()) && !isC2meModule(mod.getMetadata()))
+                .toList();
 
         StringBuilder builder = new StringBuilder();
         builder.append("[Environment Info]").append(System.lineSeparator());
@@ -74,6 +85,27 @@ public final class StackPlusIssueReportCommand {
         builder.append(System.lineSeparator());
         builder.append("[Loaded Mods]").append(System.lineSeparator());
 
+        appendModList(builder, otherMods);
+        builder.append(System.lineSeparator());
+        builder.append("[Fabric Modules]").append(System.lineSeparator());
+        appendModList(builder, fabricModules);
+        builder.append(System.lineSeparator());
+        builder.append("[C2ME Modules]").append(System.lineSeparator());
+        appendModList(builder, c2meModules);
+
+        return builder.toString();
+    }
+
+    // Keep Fabric API components and Fabric libraries separate from regular mods.
+    private static boolean isFabricModule(ModMetadata metadata) {
+        return metadata.getId().startsWith(FABRIC_MODULE_ID_PREFIX);
+    }
+
+    private static boolean isC2meModule(ModMetadata metadata) {
+        return metadata.getId().startsWith(C2ME_MODULE_ID_PREFIX);
+    }
+
+    private static void appendModList(StringBuilder builder, List<ModContainer> mods) {
         for (ModContainer mod : mods) {
             ModMetadata metadata = mod.getMetadata();
             builder.append("- ")
@@ -84,8 +116,6 @@ public final class StackPlusIssueReportCommand {
                     .append(metadata.getVersion().getFriendlyString())
                     .append(System.lineSeparator());
         }
-
-        return builder.toString();
     }
 
     private static String getModVersion(String modId) {
