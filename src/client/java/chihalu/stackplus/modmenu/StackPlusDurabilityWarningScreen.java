@@ -4,6 +4,7 @@ import chihalu.stackplus.StackLimitConfig;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.CheckboxWidget;
 import net.minecraft.text.Text;
@@ -31,10 +32,13 @@ final class StackPlusDurabilityWarningScreen extends Screen {
         CheckboxWidget checkbox = CheckboxWidget.builder(Text.translatable("screen.stackplus.durability_warning.suppress"), this.textRenderer)
                 .pos(centerX - 120, buttonY - 28).checked(false)
                 .callback((widget, checked) -> suppressWarningSelected = checked).build();
+        checkbox.setTooltip(Tooltip.of(Text.translatable("tooltip.stackplus.durability_warning.suppress")));
         addDrawableChild(checkbox);
         addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.save"), button -> confirm())
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.durability_warning.confirm")))
                 .dimensions(centerX - 104, buttonY, 100, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.translatable("button.stackplus.back"), button -> close())
+                .tooltip(Tooltip.of(Text.translatable("tooltip.stackplus.settings.back")))
                 .dimensions(centerX + 4, buttonY, 100, 20).build());
     }
 

@@ -3,6 +3,9 @@
 	"package": "chihalu.stackplus.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
+		"InventorySlotWrapperMixin",
+		"compat.IronFurnacesBlockEntityMixin",
+		"compat.IronFurnacesFuelSlotMixin",
 		"BundleItemMixin",
 		"ContainerMixin",
 		"GiveCommandMixin",
