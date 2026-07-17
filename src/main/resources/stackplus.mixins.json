@@ -3,6 +3,8 @@
 	"package": "chihalu.stackplus.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
+		"compat.IronFurnacesFuelSlotMixin",
+		"ItemVariantImplMixin",
 		"AbstractChestedHorseSaveDataMixin",
 		"BundleItemMixin",
 		"ContainerHelperSaveDataMixin",
