@@ -1,0 +1,65 @@
+name: Close issues at the specified time
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: auto-close-issues
+  cancel-in-progress: false
+
+jobs:
+  close-due-issues:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Close due issues
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const marker = /<!--\s*auto-close:\s*([^>]+?)\s*-->/i;
+            const now = Date.now();
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              per_page: 100,
+            });
+
+            for (const issue of issues) {
+              // listForRepoにはPull Requestも含まれるため除外する。
+              if (issue.pull_request) continue;
+
+              const match = marker.exec(issue.body || "");
+              if (!match) continue;
+
+              // ISO 8601のタイムゾーン指定を必須にして曖昧な日時を拒否する。
+              const value = match[1].trim();
+              const hasTimezone = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value);
+              const closeAt = Date.parse(value);
+              if (!hasTimezone || Number.isNaN(closeAt)) {
+                core.warning(`Issue #${issue.number}: auto-close日時が無効です: ${value}`);
+                continue;
+              }
+              if (closeAt > now) continue;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: "指定された自動クローズ日時を過ぎたため、このIssueをクローズします。",
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: "closed",
+              });
+              core.info(`Issue #${issue.number}をクローズしました。`);
+            }
+
